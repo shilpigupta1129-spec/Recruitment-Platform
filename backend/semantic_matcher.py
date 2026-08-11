@@ -1,3 +1,4 @@
+import re
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -26,3 +27,55 @@ def calculate_similarity(resume_text, job_description):
     score = similarity * 100
 
     return round(score, 2)
+
+
+def extract_skill_matches(resume_text, job_description):
+    """
+    Find skills that are present in both the resume and job description.
+    """
+
+    skills = [
+        "Python",
+        "C++",
+        "Java",
+        "JavaScript",
+        "SQL",
+        "HTML",
+        "CSS",
+        "React",
+        "Node.js",
+        "FastAPI",
+        "Django",
+        "Machine Learning",
+        "Data Analysis",
+        "Git",
+        "GitHub",
+        "Docker",
+        "AWS",
+        "REST API",
+        "Flask",
+        "MySQL"
+    ]
+
+    resume_lower = resume_text.lower()
+    jd_lower = job_description.lower()
+
+    matched_skills = []
+    missing_skills = []
+
+    for skill in skills:
+        skill_lower = skill.lower()
+
+        if re.search(
+            r"(?<![A-Za-z0-9+#])" + re.escape(skill_lower) + r"(?![A-Za-z0-9+#])",
+            jd_lower
+        ):
+            if re.search(
+                r"(?<![A-Za-z0-9+#])" + re.escape(skill_lower) + r"(?![A-Za-z0-9+#])",
+                resume_lower
+            ):
+                matched_skills.append(skill)
+            else:
+                missing_skills.append(skill)
+
+    return matched_skills, missing_skills
