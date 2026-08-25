@@ -16,6 +16,8 @@ from backend.routes.interview_questions import router as interview_questions_rou
 from backend.routes.interview_answers import router as interview_answers_router
 from backend.routes.ai_analysis import router as ai_analysis_router
 from backend.routes.scorecard import router as scorecard_router
+from backend.routes.evaluation import router as evaluation_router
+from backend.routes.recruiter_assessment import router as recruiter_assessment_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -39,6 +41,8 @@ app.include_router(
     tags=["AI Analysis"]
 )
 app.include_router(scorecard_router)
+app.include_router(evaluation_router)
+app.include_router(recruiter_assessment_router)
 
 
 @app.get("/")
