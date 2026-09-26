@@ -1,0 +1,3352 @@
+
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+button,
+input,
+
+button {
+  cursor: pointer;
+}
+
+/* =========================================================
+   APP LAYOUT
+========================================================= */
+
+.app {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 30px;
+}
+
+
+.brand h2 {
+  margin: 0;
+  font-size: 18px;
+  color: white;
+}
+
+.brand span {
+  display: block;
+  margin-top: 3px;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+
+.nav-item span {
+  width: 20px;
+  text-align: center;
+  font-size: 17px;
+}
+
+
+.nav-item.active {
+  background: #2563eb;
+  color: white;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+
+.ai-status strong {
+  display: block;
+  font-size: 12px;
+  color: #f9fafb;
+}
+
+.ai-status small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+
+.topbar p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.stat-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.stat-icon.purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.stat-icon.green {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.stat-icon.orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.stat-label {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stat-card h2 {
+  margin: 18px 0 5px;
+  color: #111827;
+  font-size: 27px;
+}
+
+.stat-card p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.top-candidate-name {
+  font-size: 19px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================================
+   GENERAL CARD
+========================================================= */
+
+.dashboard-card {
+  background: white;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.card-header {
+  padding: 21px 22px;
+  border-bottom: 1px solid #eef1f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.card-header.simple {
+  padding: 0 0 20px;
+  border-bottom: 0;
+}
+
+.card-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+}
+
+.card-header p {
+  margin: 5px 0 0;
+  color: #8a94a3;
+  font-size: 12px;
+}
+
+/* =========================================================
+   CANDIDATE TABLE
+========================================================= */
+
+
+.search-box {
+  width: 220px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #dfe5ec;
+  border-radius: 7px;
+  background: #fafbfc;
+}
+
+.search-box span {
+  color: #9ca3af;
+  font-size: 18px;
+}
+
+.search-box input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #374151;
+  font-size: 12px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.candidate-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+
+.candidate-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+
+.email-cell {
+  color: #64748b !important;
+}
+
+.experience-cell {
+  max-width: 150px;
+}
+
+.match-score {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.score-high {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.score-medium {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+
+.status-badge {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.success {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.dashboard-message {
+  padding: 45px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* =========================================================
+   PROFILE MODAL
+========================================================= */
+
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  z-index: 100;
+}
+
+
+.profile-person {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.profile-person h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+}
+
+.profile-person p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+
+.close-profile:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: none;
+}
+
+
+.profile-score > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-score span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-score strong {
+  color: #2563eb;
+  font-size: 20px;
+}
+
+.profile-score-bar {
+  width: 100%;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #dbeafe;
+}
+
+.profile-score-bar div {
+  height: 100%;
+  border-radius: 20px;
+  background: #2563eb;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 24px;
+}
+
+.profile-info {
+  padding: 14px;
+  border: 1px solid #e8edf3;
+  border-radius: 9px;
+  background: #fafbfc;
+}
+
+.profile-info span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8a94a3;
+  font-size: 11px;
+}
+
+.profile-info strong {
+  color: #374151;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.profile-section {
+  padding: 22px 24px;
+}
+
+.profile-section h3 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: 15px;
+}
+
+.profile-status {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-footer {
+  padding: 15px 24px 22px;
+  border-top: 1px solid #eef1f5;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-footer button {
+  width: auto;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-footer button:hover {
+  background: #1d4ed8;
+  transform: none;
+}
+
+/* =========================================================
+   RESUME ANALYSIS
+========================================================= */
+
+
+.section-heading {
+  margin-bottom: 18px;
+}
+
+.section-kicker {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+}
+
+.section-heading p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+}
+
+
+label {
+  display: block;
+  margin: 17px 0 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.professional-upload input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+
+textarea {
+    font-family: inherit;
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #d7dde5;
+    border-radius: 8px;
+    resize: vertical;
+    outline: none;
+    background: white;
+    color: #1f2937;
+    font-size: 13px;
+    transition: 0.2s;
+}
+
+textarea::placeholder {
+  color: #9ca3af;
+}
+
+textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+
+.analyze-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   AI PROCESS
+========================================================= */
+
+.process-card > p {
+  margin: -12px 0 22px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   RESULTS
+========================================================= */
+
+
+.results-section > .dashboard-card {
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+/* =========================================================
+   CANDIDATE INFORMATION
+========================================================= */
+
+
+.candidate-info-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: #8a94a3;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.candidate-info-grid strong {
+  color: #374151;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+/* =========================================================
+   EVALUATION
+========================================================= */
+
+
+.mini-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #8a94a3;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.missing-title {
+  margin-top: 17px;
+}
+
+
+.empty-text {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+
+.evaluation-note {
+  margin: 13px 0 0;
+  color: #8a94a3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   RECOMMENDATION
+========================================================= */
+
+
+.strength-box {
+  border: 1px solid #d1fae5;
+}
+
+
+.strength-box h3 {
+  color: #15803d;
+}
+
+
+.strength-box ul,
+.gap-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+
+.strength-box li:last-child,
+.gap-box li:last-child {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 70px;
+    padding: 18px 10px;
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 4px 0 28px;
+  }
+
+  .brand > div:last-child {
+    font-size: 0;
+    display: none;
+  }
+
+  .nav-item {
+    font-size: 0;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .nav-item span {
+    font-size: 17px;
+  }
+
+  .ai-status {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .ai-status div {
+    display: none;
+  }
+
+  .main-content {
+    margin-left: 70px;
+    padding: 28px 20px 50px;
+  }
+
+  .candidate-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .main-content {
+    padding: 22px 14px 40px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar h1 {
+    font-size: 25px;
+  }
+
+  .refresh-button {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .candidate-tools {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .result-score-card {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: auto;
+    padding: 22px;
+  }
+
+  .profile-overlay {
+    padding: 12px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .strength-gap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .large-score-circle {
+    width: 115px;
+    height: 115px;
+    margin-top: 5px;
+  }
+
+  .large-score-circle span {
+    font-size: 25px;
+  }
+}
+/* =========================================================
+   RECRUITMENT STATUS
+   ========================================================= */
+
+
+.status-shortlisted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-review {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+/* =========================================================
+   PROFILE RECRUITMENT STATUS
+   ========================================================= */
+
+.profile-recruitment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.status-dot-small {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.profile-recruitment-status.status-shortlisted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.profile-recruitment-status.status-review {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.profile-recruitment-status.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+/* =========================================================
+   PROFILE SCORE BREAKDOWN
+========================================================= */
+
+
+/* =========================================================
+   TOP 3 RANKING
+========================================================= */
+
+
+/* =========================================================
+   RECRUITMENT OVERVIEW
+========================================================= */
+
+
+/* =========================================================
+   RESPONSIVE RECRUITMENT OVERVIEW
+========================================================= */
+
+/* =========================================================
+   CANDIDATE PROFILE DETAILS
+========================================================= */
+
+.profile-detail-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.profile-detail-list li {
+  margin-bottom: 7px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-detail-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+   SORT DROPDOWN
+========================================================= */
+
+
+/* =========================================================
+   PROFESSIONAL DASHBOARD POLISH
+========================================================= */
+
+.recruitment-overview {
+    margin-bottom: 24px;
+    margin: 24px 0;
+}
+
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+
+.overview-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.shortlisted-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.review-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.rejected-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.overview-content {
+  min-width: 0;
+}
+
+.overview-content span {
+  display: block;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.overview-content strong {
+  display: block;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 24px;
+}
+
+.overview-content small {
+  display: block;
+  margin-top: 2px;
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+/* =========================================================
+   CANDIDATE TOOLS
+========================================================= */
+
+.candidate-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.sort-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+/* =========================================================
+   CANDIDATE TABLE POLISH
+========================================================= */
+
+.candidate-table th {
+    padding: 13px 18px;
+    background: #fafbfc;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.candidate-table td {
+    padding: 15px 18px;
+    border-bottom: 1px solid #eef1f5;
+    color: #4b5563;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+
+.candidate-name-button:hover strong {
+  color: #2563eb;
+}
+
+
+/* =========================================================
+   PROFILE MODAL POLISH
+========================================================= */
+
+
+@keyframes profileModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+.profile-score-breakdown h3 {
+  margin: 0 0 15px;
+  color: #111827;
+  font-size: 15px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.breakdown-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.breakdown-item:first-of-type {
+  padding-top: 0;
+}
+
+.breakdown-item span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   RESULT SECTION POLISH
+========================================================= */
+
+
+.evaluation-grid > .dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+}
+
+/* =========================================================
+   ANALYSIS SECTION POLISH
+========================================================= */
+
+.analysis-input-card,
+
+.analysis-input-card:hover,
+.process-card:hover {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+
+.professional-upload:hover .upload-icon {
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   RESPONSIVE OVERVIEW
+========================================================= */
+
+@media (max-width: 1200px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .overview-card {
+    padding: 15px;
+  }
+
+  .overview-content strong {
+    font-size: 21px;
+  }
+
+  .sort-select {
+    width: 100%;
+  }
+
+  .profile-score-breakdown {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}
+/* =========================================================
+   RESUME ANALYSIS - PROFESSIONAL UI
+========================================================= */
+
+.analysis-section {
+    margin-top: 35px;
+    scroll-margin-top: 25px;
+}
+
+.analysis-input-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.analysis-input-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #2563eb;
+}
+
+.analysis-input-card h3,
+.process-card h3 {
+    margin: 0 0 20px;
+    color: #111827;
+    font-size: 17px;
+}
+
+/* =========================================================
+   FILE UPLOAD AREA
+========================================================= */
+
+.professional-upload {
+    position: relative;
+    min-height: 145px;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    overflow: hidden;
+    transition: 0.2s;
+}
+
+.professional-upload:hover {
+  border-color: #2563eb;
+  background: #f8faff;
+}
+
+.professional-upload:has(input[type="file"]:focus) {
+  border-color: #2563eb;
+  background: #f8faff;
+}
+
+
+.professional-upload strong {
+    color: #374151;
+    font-size: 13px;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.professional-upload span {
+    color: #9ca3af;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* =========================================================
+   JOB DESCRIPTION
+========================================================= */
+
+.analysis-input-card textarea {
+  min-height: 150px;
+  line-height: 1.6;
+}
+
+.analysis-input-card textarea:hover {
+  border-color: #cbd5e1;
+}
+
+/* =========================================================
+   ANALYZE BUTTON
+========================================================= */
+
+
+.analyze-button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   AI PROCESS CARD
+========================================================= */
+
+.process-card {
+    padding: 24px;
+    transition: 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.process-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #7c3aed;
+}
+
+.process-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.process-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+}
+
+.process-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 36px;
+  width: 1px;
+  height: 21px;
+  background: #dbeafe;
+}
+
+.process-item > span {
+    width: 31px;
+    height: 31px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    position: relative;
+    z-index: 1;
+    border: 1px solid #dbeafe;
+}
+
+.process-item strong {
+    display: block;
+    color: #374151;
+    font-size: 13px;
+}
+
+.process-item p {
+    margin: 4px 0 0;
+    color: #8a94a3;
+    font-size: 11px;
+    line-height: 1.45;
+    max-width: 420px;
+}
+
+/* =========================================================
+   ERROR MESSAGE
+========================================================= */
+
+.error {
+    margin: 14px 0 0;
+    padding: 11px 13px;
+    border-radius: 7px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 12px;
+    border: 1px solid #fecaca;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.error::before {
+  content: "!";
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #b91c1c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   ANALYSIS RESULTS
+========================================================= */
+
+
+.results-section .section-heading {
+  margin-bottom: 20px;
+}
+
+
+.result-score-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #2563eb;
+}
+
+.result-score-card > div:first-child {
+  padding-left: 4px;
+}
+
+
+.large-score-circle:hover {
+  transform: scale(1.03);
+}
+
+/* =========================================================
+   RESULT INFORMATION CARDS
+========================================================= */
+
+
+.candidate-info-grid > div:hover {
+  border-color: #bfdbfe;
+  background: #f8faff;
+}
+
+/* =========================================================
+   SKILL CHIPS
+========================================================= */
+
+
+.skill-chip.matched:hover {
+  transform: translateY(-1px);
+}
+
+.skill-chip.missing:hover {
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   RECOMMENDATION
+========================================================= */
+
+
+.strength-box:hover,
+.gap-box:hover {
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .professional-upload {
+    min-height: 145px;
+  }
+
+  .analysis-input-card textarea {
+    min-height: 130px;
+  }
+
+  .process-item p {
+    max-width: none;
+  }
+
+}
+/* =========================================================
+   ANALYSIS RESULT - PROFESSIONAL DESIGN
+========================================================= */
+
+.results-section {
+    margin-top: 38px;
+    scroll-margin-top: 25px;
+    padding-top: 5px;
+    position: relative;
+}
+
+/* =========================================================
+   RESULT HEADER
+========================================================= */
+
+.results-section .section-heading h2 {
+  font-size: 26px;
+}
+
+.results-section .section-heading p {
+  max-width: 700px;
+}
+
+/* =========================================================
+   OVERALL SCORE CARD
+========================================================= */
+
+
+.result-score-card h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 22px;
+}
+
+.result-score-card p {
+    max-width: 600px;
+    margin: 7px 0 0;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+.result-score-card .section-kicker {
+  margin-bottom: 8px;
+}
+
+/* Score circle */
+
+.large-score-circle {
+    width: 125px;
+    height: 125px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 8px solid #bfdbfe;
+    background: #f0f7ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+    transition: transform 0.2s ease;
+    border-width: 9px;
+}
+
+.large-score-circle span {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.large-score-circle small {
+    margin-top: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+/* =========================================================
+   CANDIDATE INFORMATION
+========================================================= */
+
+.results-section .dashboard-card {
+  border-radius: 14px;
+}
+
+.results-section .card-header.simple {
+  padding-bottom: 18px;
+}
+
+.results-section .card-header h2 {
+  font-size: 17px;
+}
+
+.candidate-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 13px;
+}
+
+.candidate-info-grid > div {
+    padding: 14px;
+    border: 1px solid #e8edf3;
+    border-radius: 8px;
+    background: #fafbfc;
+    transition: 0.2s ease;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* =========================================================
+   EVALUATION CARDS
+========================================================= */
+
+.evaluation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.evaluation-grid > .dashboard-card {
+    padding: 21px;
+    transition: 0.2s ease;
+    min-height: 235px;
+    border-radius: 14px;
+}
+
+.evaluation-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.evaluation-title h3 {
+    margin: 0;
+    color: #111827;
+    font-size: 16px;
+}
+
+.evaluation-score {
+    padding: 5px 9px;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* =========================================================
+   SKILLS
+========================================================= */
+
+.skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.skill-chip {
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    transition: 0.15s ease;
+}
+
+.skill-chip.matched {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.skill-chip.missing {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+/* =========================================================
+   QUALIFICATION
+========================================================= */
+
+.qualification-box {
+    padding: 12px;
+    border-radius: 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    font-size: 12px;
+    font-weight: 700;
+    min-height: 43px;
+    display: flex;
+    align-items: center;
+}
+
+.success-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 0 0 4px #f0fdf4;
+}
+
+/* =========================================================
+   EXPERIENCE
+========================================================= */
+
+.experience-number {
+    display: block;
+    color: #2563eb;
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* =========================================================
+   RECOMMENDATION CARD
+========================================================= */
+
+.recommendation-card {
+    padding: 22px !important;
+    border-radius: 14px !important;
+}
+
+.recommendation-card .card-header {
+  margin-bottom: 2px;
+}
+
+.recommendation-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    color: #1d4ed8;
+    font-size: 13px;
+    margin-bottom: 18px;
+    line-height: 1.5;
+    min-height: 52px;
+    border-left-width: 5px;
+}
+
+.recommendation-banner span {
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: white;
+    flex-shrink: 0;
+}
+
+.strength-gap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.strength-box,
+.gap-box {
+    padding: 18px;
+    border-radius: 9px;
+    background: #fafbfc;
+    border: 1px solid #fed7aa;
+    transition: 0.2s ease;
+    min-height: 150px;
+}
+
+.strength-box h3,
+.gap-box h3 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: #b45309;
+}
+
+.strength-box li,
+.gap-box li {
+    margin-bottom: 7px;
+    color: #4b5563;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   PROFILE SCORE BREAKDOWN
+========================================================= */
+
+.profile-score-breakdown {
+    margin: 0 24px 20px;
+    padding: 16px;
+    border: 1px solid #e8edf3;
+    border-radius: 10px;
+    background: #fafbfc;
+    position: relative;
+}
+
+.breakdown-item strong {
+    color: #2563eb;
+    font-size: 12px;
+    min-width: 55px;
+    text-align: right;
+}
+
+/* =========================================================
+   SMOOTH SECTION APPEARANCE
+========================================================= */
+
+.results-section > * {
+  animation: resultFadeIn 0.35s ease-out;
+}
+
+@keyframes resultFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   MOBILE RESULT
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .results-section .section-heading h2 {
+    font-size: 22px;
+  }
+
+  .evaluation-grid > .dashboard-card {
+    min-height: auto;
+  }
+
+  .strength-box,
+  .gap-box {
+    min-height: auto;
+  }
+}
+/* =========================================================
+   RECRUITMENT ANALYTICS
+========================================================= */
+
+
+.chart-container {
+  width: 100%;
+  height: 280px;
+  margin-top: 15px;
+}
+
+/* =========================================================
+   ANALYTICS RESPONSIVE
+========================================================= */
+
+@media (max-width: 650px) {
+
+  .analytics-card {
+    padding: 18px;
+  }
+
+  .analytics-header {
+    flex-direction: column;
+  }
+
+  .analytics-total {
+    align-self: flex-start;
+  }
+
+  .chart-container {
+    height: 240px;
+  }
+}
+/* =========================================================
+   RECRUITMENT ANALYTICS
+========================================================= */
+
+.analytics-section {
+    margin: 24px 0;
+    margin-top: 28px;
+    margin-bottom: 28px;
+}
+
+.analytics-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+
+.analytics-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.analytics-total {
+    min-width: 75px;
+    padding: 9px 13px;
+    border-radius: 9px;
+    background: #eff6ff;
+    text-align: center;
+}
+
+.analytics-total span {
+    display: block;
+    color: #6b7280;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.analytics-total strong {
+    display: block;
+    margin-top: 2px;
+    color: #2563eb;
+    font-size: 20px;
+}
+
+/* =========================================================
+   SIMPLE BAR CHART
+========================================================= */
+
+.simple-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chart-item {
+  width: 100%;
+}
+
+.chart-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.chart-label span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.chart-label strong {
+  font-size: 14px;
+  color: #111827;
+}
+
+.chart-bar-background {
+  width: 100%;
+  height: 14px;
+  background: #eef2f7;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  height: 100%;
+  min-width: 0;
+  border-radius: 20px;
+  transition: width 0.5s ease;
+}
+
+.shortlisted-bar {
+  background: #16a34a;
+}
+
+.review-bar {
+  background: #f59e0b;
+}
+
+.rejected-bar {
+  background: #ef4444;
+}
+
+/* =========================================================
+   RESPONSIVE ANALYTICS
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .analytics-header {
+    flex-direction: column;
+  }
+
+  .analytics-total {
+    text-align: left;
+  }
+
+}
+/* =========================================================
+   RECHARTS
+========================================================= */
+
+.recharts-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 20px;
+}
+
+/* =========================================================
+   PROFILE HEADER ACTIONS
+   ========================================================= */
+
+.profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
+/* =========================================================
+   VIEW RESUME BUTTON
+   ========================================================= */
+
+
+.view-resume-button:active {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   CLOSE PROFILE BUTTON
+   ========================================================= */
+
+.close-profile {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 7px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 22px;
+    line-height: 1;
+    border: none;
+    cursor: pointer;
+}
+/* =========================================================
+   DELETE CANDIDATE BUTTON
+   ========================================================= */
+
+.delete-candidate-button {
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+
+.delete-candidate-button:active {
+  transform: scale(0.97);
+}
+/* =========================================================
+   DELETE CONFIRMATION MODAL
+   ========================================================= */
+
+.delete-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+
+  padding: 20px;
+}
+
+.delete-modal {
+  width: 100%;
+  max-width: 430px;
+
+  background: #ffffff;
+
+  border-radius: 18px;
+
+  padding: 32px;
+
+  text-align: center;
+
+  box-shadow:
+    0 25px 60px rgba(15, 23, 42, 0.25);
+
+  animation: deleteModalIn 0.2s ease-out;
+}
+
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.delete-icon {
+  width: 64px;
+  height: 64px;
+
+  margin: 0 auto 18px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fee2e2;
+
+  font-size: 28px;
+}
+
+.delete-modal h2 {
+  margin: 0 0 10px;
+
+  font-size: 24px;
+
+  font-weight: 700;
+
+  color: #111827;
+}
+
+.delete-modal p {
+  margin: 0 auto 8px;
+
+  color: #4b5563;
+
+  font-size: 15px;
+
+  line-height: 1.6;
+}
+
+.delete-modal p strong {
+  color: #111827;
+}
+
+.delete-warning {
+  display: block;
+
+  margin-bottom: 26px;
+
+  font-size: 13px;
+
+  color: #dc2626;
+}
+
+.delete-actions {
+  display: flex;
+
+  gap: 12px;
+
+  justify-content: center;
+}
+
+.cancel-delete-button,
+
+.cancel-delete-button {
+  background: #f3f4f6;
+
+  color: #374151;
+
+  border: 1px solid #d1d5db;
+}
+
+.cancel-delete-button:hover {
+  background: #e5e7eb;
+}
+
+.confirm-delete-button {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+    background: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+}
+
+.confirm-delete-button:hover {
+  background: #b91c1c;
+}
+
+.cancel-delete-button:disabled,
+.confirm-delete-button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+}
+/* =========================================================
+   CANDIDATE PROFILE - AI RECOMMENDATION
+   ========================================================= */
+
+
+.recommendation-content {
+  flex: 1;
+}
+
+.recommendation-content strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.recommendation-content p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Strong Candidate */
+
+.recommendation-strong {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.recommendation-strong .recommendation-icon {
+  background: #d1fae5;
+}
+
+/* Under Review */
+
+.recommendation-review {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.recommendation-review .recommendation-icon {
+  background: #fef3c7;
+}
+
+/* Low Match */
+
+.recommendation-low {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.recommendation-low .recommendation-icon {
+  background: #fee2e2;
+}
+/* =========================================================
+   PHASE 1 - DASHBOARD VISUAL POLISH
+========================================================= */
+
+/* Main page spacing */
+.main-content {
+    margin-left: 240px;
+    min-height: 100vh;
+    padding: 32px 38px 60px;
+    max-width: 1600px;
+    padding-top: 28px;
+    padding-bottom: 70px;
+}
+
+/* Smoother overall cards */
+.stat-card,
+.dashboard-card,
+.overview-card,
+.analytics-card,
+
+/* Statistics cards */
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: #dbeafe;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Dashboard cards */
+.dashboard-card:hover {
+  border-color: #e2e8f0;
+}
+
+/* Better top heading */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding-bottom: 4px;
+}
+
+.topbar h1 {
+    margin: 0;
+    font-size: 30px;
+    color: #111827;
+    font-weight: 750;
+    letter-spacing: -0.4px;
+}
+
+/* Refresh button */
+.refresh-button {
+    width: auto;
+    min-width: 105px;
+    padding: 10px 16px;
+    border: 1px solid #dbe2ea;
+    border-radius: 8px;
+    background: white;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    transition: 0.2s;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.refresh-button:hover {
+  background: #f9fafb;
+  border-color: #cbd5e1;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* Candidate table readability */
+
+.candidate-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+/* Candidate name */
+.candidate-name-button strong {
+    font-size: 13px;
+    transition: 0.2s;
+    font-weight: 700;
+}
+
+/* Better search and dropdown */
+.search-box,
+.sort-select {
+    height: 36px;
+    margin-left: 8px;
+    padding: 0 10px;
+    border: 1px solid #dfe5ec;
+    border-radius: 7px;
+    background: white;
+    color: #374151;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.search-box:focus-within {
+  border-color: #93c5fd;
+  background: white;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+.sort-select:hover {
+  border-color: #93c5fd;
+}
+
+/* Better status badges */
+.recruitment-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: transform 0.15s ease;
+}
+
+.recruitment-status:hover {
+  transform: translateY(-1px);
+}
+
+/* Section headings */
+.overview-heading h2,
+.card-header h2,
+.analytics-header h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 19px;
+    letter-spacing: -0.2px;
+}
+
+/* Better sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    background: #111827;
+    color: white;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    box-shadow: 4px 0 18px rgba(15, 23, 42, 0.08);
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 13px;
+    border-radius: 9px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.nav-item:hover {
+  background: #1f2937;
+  color: white;
+}
+
+/* Brand icon */
+.brand-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.25);
+}
+
+/* AI online indicator */
+.ai-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px;
+    border-radius: 10px;
+    background: #1f2937;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.10);
+}
+
+/* Better analytics card */
+.analytics-card:hover {
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+}
+
+/* Better overview cards */
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+/* Smooth scrolling for dashboard sections */
+html {
+  scroll-behavior: smooth;
+}
+/* =========================================================
+   PHASE 1 - STEP 2
+   CANDIDATE RANKING POLISH
+========================================================= */
+
+/* Ranking section */
+
+/* Ranking card heading */
+.ranking-section .card-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+/* Candidate table wrapper */
+.candidate-table-container {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Table header */
+.candidate-table thead th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Candidate rows */
+.candidate-table tbody tr {
+    transition: background 0.2s;
+    cursor: default;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.candidate-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.candidate-table tbody td {
+  padding: 16px;
+  vertical-align: middle;
+}
+
+/* Candidate name */
+.candidate-name-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    width: auto;
+    border: none;
+    background: transparent;
+    color: #111827;
+    text-align: left;
+    transition: color 0.2s ease;
+}
+
+.candidate-name-button:hover {
+  color: #2563eb;
+  transform: none;
+}
+
+/* Rank badge */
+.rank-badge {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    padding: 5px 8px;
+    border-radius: 7px;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+/* Top 3 ranking emphasis */
+.rank-first {
+    background: #fef3c7;
+    color: #b45309;
+    box-shadow: 0 3px 10px rgba(234, 179, 8, 0.18);
+}
+
+.rank-second {
+    background: #f1f5f9;
+    color: #475569;
+    box-shadow: 0 3px 10px rgba(100, 116, 139, 0.15);
+}
+
+.rank-third {
+    background: #ffedd5;
+    color: #c2410c;
+    box-shadow: 0 3px 10px rgba(180, 83, 9, 0.12);
+}
+
+/* Score badge */
+.score-high,
+.score-medium,
+.score-low {
+    background: #fee2e2;
+    color: #b91c1c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* Candidate action buttons */
+.candidate-table button {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.candidate-table button:hover {
+  transform: translateY(-1px);
+}
+
+/* Delete button */
+.delete-candidate-button:hover {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+/* Search/filter toolbar */
+.candidate-controls {
+  margin-bottom: 18px;
+}
+
+.candidate-controls input,
+.candidate-controls select {
+  min-height: 40px;
+}
+
+/* Better empty state */
+.empty-state {
+  padding: 45px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-state strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 15px;
+}
+
+/* Ranking section spacing */
+.ranking-section {
+    overflow: hidden;
+    margin-top: 28px;
+}
+
+/* Mobile table improvement */
+@media (max-width: 768px) {
+  .candidate-table-container {
+    overflow-x: auto;
+  }
+
+  .candidate-table {
+    min-width: 760px;
+  }
+
+  .candidate-table thead th,
+  .candidate-table tbody td {
+    padding: 12px;
+  }
+}
+/* =========================================================
+   PHASE 1 - STEP 3
+   DASHBOARD STATS & RECRUITMENT OVERVIEW POLISH
+========================================================= */
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+/* Individual stat cards */
+.stat-card {
+    background: white;
+    border: 1px solid #e8edf3;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle top accent */
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #2563eb;
+  opacity: 0.9;
+}
+
+/* Stat icon */
+.stat-card .stat-icon {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.05);
+}
+
+/* Stat title */
+.stat-card .stat-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+/* Stat value */
+.stat-card .stat-value {
+  margin-top: 6px;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+}
+
+/* Stat description */
+.stat-card .stat-description {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Top candidate text */
+.stat-card .top-candidate-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recruitment overview */
+.overview-section {
+  margin-bottom: 28px;
+}
+
+.overview-card {
+    background: white;
+    border: 1px solid #e8edf3;
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    transition: 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Overview heading */
+.overview-heading {
+    margin-bottom: 14px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.overview-heading h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 18px;
+    font-weight: 750;
+}
+
+.overview-heading p {
+    margin: 5px 0 0;
+    color: #8a94a3;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* Overview statistics */
+.overview-stats {
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Individual overview item */
+.overview-stat {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 18px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.overview-stat:hover {
+  transform: translateY(-2px);
+  border-color: #dbeafe;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* Overview number */
+.overview-stat .overview-number {
+  font-size: 24px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+/* Overview label */
+.overview-stat .overview-label {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #334155;
+}
+
+/* Overview description */
+.overview-stat .overview-description {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Better responsive stats */
+@media (max-width: 1000px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 18px;
+  }
+
+  .overview-stats {
+    grid-template-columns: 1fr;
+  }
+}
+/* =========================================================
+   PHASE 1 - STEP 4
+   AI SCREENING / RESUME ANALYSIS POLISH
+========================================================= */
+
+/* AI Screening section */
+.resume-analysis-section {
+  margin-top: 30px;
+}
+
+/* Section heading */
+.resume-analysis-section .section-header {
+  margin-bottom: 20px;
+}
+
+.resume-analysis-section .section-header h2 {
+  font-size: 20px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.resume-analysis-section .section-header p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Analysis cards */
+.analysis-card,
+.upload-card,
+.job-description-card,
+
+.analysis-card:hover,
+.upload-card:hover,
+.job-description-card:hover,
+.ai-process-card:hover {
+  border-color: #dbeafe;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+/* Upload area */
+.upload-area,
+.resume-upload-area {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.upload-area:hover,
+.resume-upload-area:hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+/* Upload icon */
+.upload-icon {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 3px;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.upload-area:hover .upload-icon,
+.resume-upload-area:hover .upload-icon {
+  transform: translateY(-2px);
+}
+
+/* Job description textarea */
+.job-description-card textarea,
+.analysis-card textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #334155;
+  background: #ffffff;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.job-description-card textarea:focus,
+.analysis-card textarea:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+/* Analyze button */
+.analyze-button {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+    position: relative;
+    min-height: 44px;
+    letter-spacing: 0.1px;
+}
+
+.analyze-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+}
+
+.analyze-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.analyze-button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.6;
+}
+
+/* AI Process section */
+.ai-process-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #ffffff;
+    transition: border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+    margin-top: 22px;
+    padding: 22px;
+}
+
+.ai-process-card h3 {
+  font-size: 16px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.ai-process-card > p {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Process steps */
+.ai-process-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+
+/* Individual process step */
+.ai-process-step {
+  position: relative;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.ai-process-step:hover {
+  transform: translateY(-2px);
+  border-color: #bfdbfe;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+}
+
+/* Step number */
+.ai-process-step .step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* Step title */
+.ai-process-step h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Step description */
+.ai-process-step p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+/* Selected file */
+.selected-file {
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 10px 12px;
+}
+
+/* Responsive AI process */
+@media (max-width: 1000px) {
+  .ai-process-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .ai-process-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-process-card {
+    padding: 16px;
+  }
+}
+/* =========================================================
+   PHASE 1 - STEP 5
+   CANDIDATE PROFILE & ANALYSIS RESULTS POLISH
+========================================================= */
+
+/* Candidate profile modal */
+.profile-modal {
+    width: 100%;
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    animation: profileModalIn 0.2s ease-out;
+}
+
+@keyframes profileModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Profile header */
+.profile-header {
+    padding: 22px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #eef1f5;
+}
+
+/* Profile candidate name */
+.profile-header h2 {
+  font-weight: 750;
+  letter-spacing: -0.3px;
+}
+
+/* Profile score */
+.profile-score {
+    margin: 20px 24px;
+    padding: 17px;
+    border-radius: 10px;
+    background: #f8faff;
+    border: 1px solid #e0eaff;
+    transition: transform 0.2s ease;
+}
+
+.profile-score:hover {
+  transform: scale(1.02);
+}
+
+/* Overall score progress */
+.score-progress {
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.score-progress-bar {
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* Profile information cards */
+.profile-info-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-info-card:hover {
+  border-color: #dbeafe;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.05);
+}
+
+/* Skills */
+.profile-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-skill {
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Score breakdown */
+.score-breakdown {
+  border-top: 1px solid #eef2f7;
+  margin-top: 22px;
+  padding-top: 20px;
+}
+
+.score-breakdown-item {
+  padding: 12px 0;
+}
+
+.score-breakdown-item + .score-breakdown-item {
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Recommendation card */
+.profile-recommendation {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 12px;
+    margin-top: 12px;
+    border: 1px solid transparent;
+    transition: transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-recommendation:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+}
+
+/* Recommendation icon */
+.recommendation-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 20px;
+    transition: transform 0.2s ease;
+}
+
+.profile-recommendation:hover .recommendation-icon {
+  transform: scale(1.08);
+}
+
+/* Recruitment status select */
+.profile-status-select,
+.recruitment-status-select {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-status-select:focus,
+.recruitment-status-select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px #dbeafe;
+}
+
+/* View Resume button */
+.view-resume-button {
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-resume-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* Analysis result section */
+.analysis-results {
+  margin-top: 30px;
+}
+
+/* Result score card */
+.result-score-card {
+    margin-bottom: 18px;
+    padding: 25px;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid #e8edf3;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    overflow: hidden;
+    position: relative;
+    min-height: 170px;
+    transition: transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* Result score value */
+.result-score {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* Result sections */
+.result-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 18px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.result-section:hover {
+  border-color: #dbeafe;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+}
+
+/* Result section heading */
+.result-section h3 {
+  font-size: 15px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+/* Result labels */
+.result-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+}
+
+/* Result values */
+.result-value {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 650;
+  color: #334155;
+}
+
+/* Mobile profile */
+@media (max-width: 700px) {
+  .profile-modal {
+    width: calc(100% - 24px);
+    max-height: 92vh;
+  }
+
+  .result-score {
+    font-size: 32px;
+  }
+}
+/* =========================================================
+   EMPTY CANDIDATES STATE
+   ========================================================= */
+
+.empty-candidates-state {
+  text-align: center;
+  padding: 55px 30px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  margin: 10px 0 5px;
+}
+
+.empty-candidates-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  font-size: 30px;
+}
+
+.empty-candidates-state h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.empty-candidates-state p {
+  max-width: 480px;
+  margin: 0 auto 22px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.empty-state-button {
+  border: none;
+  border-radius: 9px;
+  padding: 11px 18px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.empty-state-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}

@@ -1,0 +1,1 @@
+from backend.models.recruiter_candidate import RecruiterCandidate

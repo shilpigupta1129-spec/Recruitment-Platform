@@ -82,3 +82,27 @@ def get_questions(
         }
         for q in questions
     ]
+@router.delete("/{interview_id}/questions/{question_id}")
+def delete_question(
+    interview_id: int,
+    question_id: int,
+    db: Session = Depends(get_db)
+):
+    question = db.query(InterviewQuestion).filter(
+        InterviewQuestion.id == question_id,
+        InterviewQuestion.interview_id == interview_id
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    db.delete(question)
+    db.commit()
+
+    return {
+        "message": "Question deleted successfully",
+        "question_id": question_id
+    }

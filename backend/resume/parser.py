@@ -55,30 +55,14 @@ def extract_phone(text):
 def extract_name(text):
     lines = text.splitlines()
 
-    ignored_sections = {
-        "CAREER OBJECTIVE",
-        "EDUCATION",
-        "TECHNICAL SKILLS",
-        "PROGRAMMING LANGUAGES",
-        "STRENGTHS",
-        "EXTRACURRICULAR",
-        "CONTACT",
-        "PHONE",
-        "EMAIL",
-        "LOCATION",
-    }
-
     for line in lines:
         line = line.strip()
 
-        if not line:
-            continue
+        if line.lower().startswith("name:"):
+            name = line.split(":", 1)[1].strip()
 
-        if line.upper() in ignored_sections:
-            continue
-
-        if line.isupper() and 2 <= len(line.split()) <= 4:
-            return line
+            if name:
+                return name
 
     return None
 
@@ -112,16 +96,16 @@ def extract_skills(text):
     for line in lines:
         line = line.strip()
 
-        if line.upper() == "TECHNICAL SKILLS":
+        if line.lower() in ["skills", "technical skills"]:
             inside_skills_section = True
             continue
 
-        if inside_skills_section and line.upper() in [
-            "EDUCATION",
-            "STRENGTHS",
-            "EXTRACURRICULAR",
-            "EXPERIENCE",
-            "PROJECTS"
+        if inside_skills_section and line.lower() in [
+            "education",
+            "experience",
+            "projects",
+            "strengths",
+            "extracurricular"
         ]:
             break
 
@@ -200,17 +184,7 @@ def extract_experience(text):
     experience = []
 
     lines = text.splitlines()
-
-    experience_keywords = [
-        "Experience",
-        "Internship",
-        "Intern",
-        "Worked",
-        "Digital Creative",
-        "PR activities",
-        "Event Management",
-        "Cultural Committee"
-    ]
+    inside_experience_section = False
 
     for line in lines:
         line = line.strip()
@@ -218,11 +192,23 @@ def extract_experience(text):
         if not line:
             continue
 
-        for keyword in experience_keywords:
-            if keyword.lower() in line.lower():
-                if line not in experience:
-                    experience.append(line)
-                break
+        if line.lower() == "experience":
+            inside_experience_section = True
+            continue
+
+        if inside_experience_section and line.lower() in [
+            "projects",
+            "education",
+            "skills",
+            "technical skills",
+            "strengths",
+            "extracurricular"
+        ]:
+            break
+
+        if inside_experience_section:
+            if line not in experience:
+                experience.append(line)
 
     return experience
 
