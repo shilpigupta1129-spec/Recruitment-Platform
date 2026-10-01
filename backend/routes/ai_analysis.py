@@ -18,7 +18,6 @@ router = APIRouter(
 api_key = os.getenv("OPENAI_API_KEY")	
 client = OpenAI(api_key=api_key) if api_key else None
 
-
 @router.post("/analyze-answer")
 def analyze_answer(
     answer_id: int,
@@ -43,6 +42,29 @@ def analyze_answer(
             status_code=404,
             detail="Question not found"
         )
+
+    answer_text = answer.answer.strip()
+
+    # -----------------------------------------
+    # INPUT VALIDATION
+    # -----------------------------------------
+
+    if not any(char.isalnum() for char in answer_text):
+        answer.score = 0
+        answer.feedback = (
+            "The submitted response does not contain a meaningful answer."
+        )
+
+        db.commit()
+        db.refresh(answer)
+
+        return {
+            "answer_id": answer.id,
+            "question_id": answer.question_id,
+            "score": 0,
+            "feedback": answer.feedback,
+            "source": "Input Validation"
+        }
 
     prompt = f"""
 Evaluate the candidate's answer to the interview question.
@@ -88,56 +110,181 @@ in relation to the given question.
 
     except Exception:
         question_text = question.question.lower()
-        answer_text = answer.answer.lower()
+        answer_text = answer_text.lower()
+
+        score = 0
+        feedback = (
+            "The answer is incorrect or irrelevant to the question."
+        )
+
+        # -----------------------------------------
+        # Q1: Largest number in a list
+        # -----------------------------------------
 
         if (
-            "dictionary" in question_text
+            "largest number" in question_text
             and "list" in question_text
         ):
+
             if (
-                "key-value" in answer_text
-                and "index" in answer_text
+                "max(" in answer_text
+                or "max (" in answer_text
+                or (
+                    "for" in answer_text
+                    and ">" in answer_text
+                )
             ):
-                score = 9
+                score = 10
                 feedback = (
-                    "The answer correctly distinguishes a dictionary "
-                    "from a list by explaining key-value pairs and "
-                    "index-based access."
+                    "The answer correctly demonstrates how to find "
+                    "the largest number in a list."
                 )
-            else:
-                score = 6
+
+            elif (
+                "list" in answer_text
+                and (
+                    "largest" in answer_text
+                    or "maximum" in answer_text
+                )
+            ):
+                score = 5
                 feedback = (
-                    "The answer shows some understanding but does not "
-                    "clearly explain the main differences between a "
-                    "dictionary and a list."
+                    "The answer shows the correct idea but does not "
+                    "provide a complete solution."
                 )
+
+        # -----------------------------------------
+        # Q2: append() output
+        # -----------------------------------------
+
+        elif "append" in question_text:
+
+            normalized_answer = (
+                answer_text
+                .replace(" ", "")
+                .replace("\n", "")
+            )
+
+            if (
+                "[1,2,3,4]" in normalized_answer
+                or (
+                    "append" in answer_text
+                    and "4" in answer_text
+                )
+            ):
+                score = 10
+                feedback = (
+                    "The answer correctly identifies the output "
+                    "as [1, 2, 3, 4]."
+        )
+
+        # -----------------------------------------
+        # Q3: Second-highest salary
+        # -----------------------------------------
 
         elif (
-            "list" in question_text
-            and "tuple" in question_text
+            "second-highest" in question_text
+            or "second highest" in question_text
         ):
+
             if (
-                "mutable" in answer_text
-                and "immutable" in answer_text
+                (
+    (
+        "order by" in answer_text
+        or "dense_rank" in answer_text
+        or "dense_rank()" in answer_text
+    )
+    or (
+        "max(" in answer_text
+        and "salary" in answer_text
+        and "<" in answer_text
+    )
+)
             ):
-                score = 9
+                score = 10
                 feedback = (
-                    "The answer correctly explains that lists are "
-                    "mutable while tuples are immutable."
-                )
-            else:
-                score = 6
-                feedback = (
-                    "The answer partially addresses the difference "
-                    "between lists and tuples but needs more detail."
+                    "The answer provides a correct approach for finding "
+                    "the second-highest salary."
                 )
 
-        else:
-            score = 7
-            feedback = (
-                "The answer is relevant to the interview question "
-                "but could provide more technical detail."
+            elif (
+                "second" in answer_text
+                and "salary" in answer_text
+            ):
+                score = 5
+                feedback = (
+                    "The answer is related to finding the second-highest "
+                    "salary but does not provide a complete SQL solution."
+                )
+
+        # -----------------------------------------
+        # Q4: Python for loop syntax
+        # -----------------------------------------
+
+        elif (
+            "for loop" in question_text
+            or "find and correct the error" in question_text
+            or (
+                "for" in question_text
+                and "in" in question_text
             )
+        ):
+
+            if (
+                "for" in answer_text
+                and "in" in answer_text
+                and (
+                    ":" in answer_text
+                    or "range" in answer_text
+                )
+            ):
+                score = 10
+                feedback = (
+                    "The answer correctly demonstrates Python "
+                    "for-loop syntax."
+                )
+
+            elif (
+                "for" in answer_text
+                and "in" in answer_text
+            ):
+                score = 5
+                feedback = (
+                    "The answer shows the basic for-loop structure "
+                    "but does not provide complete syntax."
+                )
+
+        # -----------------------------------------
+        # Q5: Palindrome
+        # -----------------------------------------
+
+        elif "palindrome" in question_text:
+
+            if (
+                "palindrome" in answer_text
+                and (
+                    "[::-1]" in answer_text
+                    or "reverse" in answer_text
+                )
+            ):
+                score = 10
+                feedback = (
+                    "The answer correctly demonstrates how to check "
+                    "whether a string is a palindrome."
+                )
+
+            elif (
+                "palindrome" in answer_text
+                and (
+                    "same" in answer_text
+                    or "equal" in answer_text
+                )
+            ):
+                score = 5
+                feedback = (
+                    "The answer understands the palindrome concept "
+                    "but does not provide a complete solution."
+                )
 
         answer.score = score
         answer.feedback = feedback

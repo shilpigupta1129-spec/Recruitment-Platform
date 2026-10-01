@@ -218,6 +218,27 @@ async def upload_resume(
         else:
             recruitment_status = "Not Recommended"
 
+        normalized_job_description = " ".join(
+            job_description.lower().split()
+        )
+
+        existing_candidates = db.query(RecruiterCandidate).filter(
+            RecruiterCandidate.email == resume_data.get("email")
+        ).all()
+
+        for existing_candidate in existing_candidates:
+            existing_jd = " ".join(
+                (existing_candidate.job_description or "").lower().split()
+            )
+
+            if existing_jd == normalized_job_description:
+                return {
+                    "message": "This candidate has already been analyzed for this job description.",
+                    "candidate_id": existing_candidate.id,
+                    "overall_score": existing_candidate.overall_score,
+                    "recruitment_status": existing_candidate.recruitment_status,
+                }
+
         candidate = RecruiterCandidate(
             name=resume_data.get("name") or "Unknown Candidate",
             email=resume_data.get("email"),

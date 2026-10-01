@@ -34,6 +34,7 @@ function Interview() {
     "Please introduce yourself and tell me about your technical background."
   );
   const [videoQuestionId, setVideoQuestionId] = useState(null);
+  const [videoQuestionIndex, setVideoQuestionIndex] = useState(0);
 
   // =========================
   // VIDEO / SPEECH REFS
@@ -63,80 +64,81 @@ function Interview() {
   // START VIDEO INTERVIEW
   // =========================
   const startVideoInterview = async () => {
-  setAiResult(null);
-  setTranscript("");
-  setError("");
+    setAiResult(null);
+    setTranscript("");
+    setError("");
 
-  stopCamera();
+    stopCamera();
 
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/interviews/${interviewId}/questions`
-    );
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/interviews/${interviewId}/questions`
+      );
 
-    if (!response.ok) {
-      throw new Error("Unable to load video interview questions.");
+      if (!response.ok) {
+        throw new Error("Unable to load video interview questions.");
+      }
+
+      const questionList = await response.json();
+
+      if (!Array.isArray(questionList) || questionList.length === 0) {
+        throw new Error("No video interview questions found.");
+      }
+
+      // Save database questions for Stage 2
+      setVideoQuestions(questionList);
+      videoQuestionsRef.current = questionList;
+
+      // Stage 2 starts with Introduction - Question ID 7
+      const introductionQuestion = questionList.find(
+        (item) => item.question_id === 7
+      );
+
+      if (!introductionQuestion) {
+        throw new Error("Introduction question not found.");
+      }
+
+      setVideoQuestion(introductionQuestion.question);
+      setVideoQuestionId(introductionQuestion.question_id);
+      setVideoQuestionIndex(0);
+
+      // Start camera and microphone
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      // AI asks Introduction question
+      speakQuestion(
+        introductionQuestion.question,
+        true,
+        introductionQuestion.question_id
+      );
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message ||
+          "Camera and microphone permission is required."
+      );
     }
-
-    const questionList = await response.json();
-
-    if (!Array.isArray(questionList) || questionList.length === 0) {
-      throw new Error("No video interview questions found.");
-    }
-
-    // Save database questions for Stage 2
-    setVideoQuestions(questionList);
-    videoQuestionsRef.current = questionList;
-
-    // Stage 2 starts with Introduction - Question ID 7
-    const introductionQuestion = questionList.find(
-      (item) => item.question_id === 7
-    );
-
-    if (!introductionQuestion) {
-      throw new Error("Introduction question not found.");
-    }
-
-    setVideoQuestion(introductionQuestion.question);
-    setVideoQuestionId(introductionQuestion.question_id);
-
-    // Start camera and microphone
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-
-    streamRef.current = stream;
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-    }
-
-    // AI asks Introduction question
-    speakQuestion(
-      introductionQuestion.question,
-      true,
-      introductionQuestion.question_id
-    );
-  } catch (err) {
-    console.error(err);
-
-    setError(
-      err.message ||
-        "Camera and microphone permission is required."
-    );
-  }
-};  
+  };
 
   // =========================
   // SPEAK AI QUESTION
   // =========================
-const speakQuestion = (
-  text,
-  startListeningAfter = false,
-  questionId = null
-) => {
+  const speakQuestion = (
+    text,
+    startListeningAfter = false,
+    questionId = null
+  ) => {
     if (!("speechSynthesis" in window)) {
       setError("Speech synthesis is not supported in this browser.");
       return;
@@ -156,10 +158,7 @@ const speakQuestion = (
 
       if (startListeningAfter) {
         setTimeout(() => {
-          startSpeechRecognition(
-            text,
-            questionId
-          );
+          startSpeechRecognition(text, questionId);
         }, 500);
       }
     };
@@ -178,419 +177,498 @@ const speakQuestion = (
     questionText = videoQuestion,
     questionId = null
   ) => {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (!SpeechRecognition) {
-    setError("Speech recognition is not supported in this browser.");
-    return;
-  }
-
-  if (recognitionRef.current) {
-    return;
-  }
-
-  setError("");
-  setTranscript("");
-
-  const recognition = new SpeechRecognition();
-
-  recognitionRef.current = recognition;
-
-  recognition.lang = "en-US";
-
-  // IMPORTANT:
-  // Continuous mode keeps listening even if candidate pauses.
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  let finalTranscript = "";
-  let silenceTimer = null;
-  let processed = false;
-
-  const SILENCE_TIME = 6000; // 6 seconds
-
-  const resetSilenceTimer = () => {
-    if (silenceTimer) {
-      clearTimeout(silenceTimer);
-    }
-
-    silenceTimer = setTimeout(() => {
-      console.log("6 seconds silence detected. Stopping recognition...");
-      recognition.stop();
-    }, SILENCE_TIME);
-  };
-
-  recognition.onresult = (event) => {
-    let interimTranscript = "";
-
-    for (
-      let i = event.resultIndex;
-      i < event.results.length;
-      i++
-    ) {
-      const text = event.results[i][0].transcript;
-
-      if (event.results[i].isFinal) {
-        finalTranscript += text + " ";
-      } else {
-        interimTranscript += text;
-      }
-    }
-
-    const displayTranscript =
-      finalTranscript + interimTranscript;
-
-    setTranscript(displayTranscript.trim());
-
-    console.log(
-      "Candidate Answer:",
-      displayTranscript
-    );
-
-    // Every time candidate speaks,
-    // restart the 6-second silence timer.
-    resetSilenceTimer();
-  };
-
-  recognition.onerror = (event) => {
-    console.log(
-      "Speech recognition error:",
-      event.error
-    );
-
-    if (silenceTimer) {
-      clearTimeout(silenceTimer);
-    }
-
-    recognitionRef.current = null;
-
-    if (event.error !== "aborted") {
-      setError(
-        "Unable to capture your voice. Please try again."
-      );
-    }
-  };
-
-  recognition.onend = async () => {
-    if (silenceTimer) {
-      clearTimeout(silenceTimer);
-    }
-
-    recognitionRef.current = null;
-
-    // Prevent duplicate processing
-    if (processed) {
+    if (!SpeechRecognition) {
+      setError("Speech recognition is not supported in this browser.");
       return;
     }
 
-    const finalAnswer = finalTranscript.trim();
-
-    if (!finalAnswer) {
+    if (recognitionRef.current) {
       return;
     }
 
-    processed = true;
+    setError("");
+    setTranscript("");
 
-    try {
-      setLoading(true);
-      setError("");
+    const recognition = new SpeechRecognition();
 
-      // -----------------------------
-      // AI ANSWER EVALUATION
-      // -----------------------------
+    recognitionRef.current = recognition;
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/ai/analyze-video-answer?question=" +
-          encodeURIComponent(questionText) +
-          "&answer=" +
-          encodeURIComponent(finalAnswer),
-        {
-          method: "POST",
+    recognition.lang = "en-US";
+
+    // IMPORTANT:
+    // Continuous mode keeps listening even if candidate pauses.
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = "";
+    let silenceTimer = null;
+    let processed = false;
+
+    const SILENCE_TIME = 6000; // 6 seconds
+
+    const resetSilenceTimer = () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
+
+      silenceTimer = setTimeout(() => {
+        console.log(
+          "6 seconds silence detected. Stopping recognition..."
+        );
+        recognition.stop();
+      }, SILENCE_TIME);
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+        const text = event.results[i][0].transcript;
+
+        if (event.results[i].isFinal) {
+          finalTranscript += text + " ";
+        } else {
+          interimTranscript += text;
         }
-      );
-
-      if (!response.ok) {
-        throw new Error("AI evaluation failed.");
       }
 
-      const data = await response.json();
+      const displayTranscript =
+        finalTranscript + interimTranscript;
 
-      setAiResult(data);
+      setTranscript(displayTranscript.trim());
 
-      const newEvaluation = {
-        question: questionText,
-        answer: finalAnswer,
-        score:
-          typeof data.score === "number"
-            ? data.score
-            : 0,
-        feedback:
-          typeof data.feedback === "string"
-            ? data.feedback
-            : "",
-      };
-      
-      // Save video interview answer to database
-if (questionId) {
-  let answerId = null;
-
-  // Try to save the answer
-  const saveAnswerResponse = await fetch(
-    `http://127.0.0.1:8000/interviews/${interviewId}/answers`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        question_id: questionId,
-        answer: finalAnswer,
-      }),
-    }
-  );
-
-  if (saveAnswerResponse.ok) {
-    const savedAnswerData =
-      await saveAnswerResponse.json();
-
-    answerId = savedAnswerData.answer_id;
-  } else if (saveAnswerResponse.status === 400) {
-    // Answer already exists — use the existing answer
-    const answersResponse = await fetch(
-      `http://127.0.0.1:8000/interviews/${interviewId}/answers`
-    );
-
-    if (answersResponse.ok) {
-      const answers = await answersResponse.json();
-
-      const existingAnswer = answers.find(
-        (item) =>
-          item.question_id === questionId
+      console.log(
+        "Candidate Answer:",
+        displayTranscript
       );
 
-      if (existingAnswer) {
-        answerId = existingAnswer.answer_id;
+      // Every time candidate speaks,
+      // restart the 6-second silence timer.
+      resetSilenceTimer();
+    };
+
+    recognition.onerror = (event) => {
+      console.log(
+        "Speech recognition error:",
+        event.error
+      );
+
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
       }
-    }
 
-    console.log(
-      "Answer already exists. Using existing answer:",
-      answerId
-    );
-  } else {
-    const errorData =
-      await saveAnswerResponse.text();
+      recognitionRef.current = null;
 
-    console.error(
-      "Unable to save video interview answer:",
-      errorData
-    );
-  }
-
-  // Save AI score and feedback
-  if (
-    answerId &&
-    data.score !== undefined
-  ) {
-    const evaluationResponse = await fetch(
-      `http://127.0.0.1:8000/interviews/${interviewId}/answers/${answerId}/evaluation?score=${encodeURIComponent(
-        data.score
-      )}&feedback=${encodeURIComponent(
-        data.feedback || ""
-      )}`,
-      {
-        method: "PUT",
-      }
-    );
-
-    if (!evaluationResponse.ok) {
-      const evaluationError =
-        await evaluationResponse.text();
-
-      console.error(
-        "Unable to save evaluation:",
-        evaluationError
-      );
-    }
-  }
-}
-
-      const updatedEvaluations = [
-        ...videoEvaluationsRef.current,
-        newEvaluation,
-      ];
-
-      videoEvaluationsRef.current =
-        updatedEvaluations;
-
-      setVideoEvaluations(updatedEvaluations);
-
-      // -----------------------------
-      // GENERATE NEXT QUESTION
-      // -----------------------------
-
-      const nextQuestionResponse = await fetch(
-        "http://127.0.0.1:8000/ai/generate-next-question?answer=" +
-          encodeURIComponent(finalAnswer) +
-          "&current_question=" +
-          encodeURIComponent(questionText),
-        {
-          method: "POST",
-        }
-      );
-
-      if (!nextQuestionResponse.ok) {
-        throw new Error(
-          "Unable to generate next question."
+      if (event.error !== "aborted") {
+        setError(
+          "Unable to capture your voice. Please try again."
         );
       }
+    };
 
-      const nextQuestionData =
-        await nextQuestionResponse.json();
+    recognition.onend = async () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
 
-      // -----------------------------
-      // INTERVIEW COMPLETED
-      // -----------------------------
+      recognitionRef.current = null;
 
-      if (nextQuestionData.interview_completed) {
-        try {
-          const scorecardResponse = await fetch(
-            "http://127.0.0.1:8000/ai/generate-final-scorecard?evaluations=" +
-              encodeURIComponent(
-                JSON.stringify(
-                  updatedEvaluations.map(
-                    (item) => ({
-                      question:
-                        typeof item.question ===
-                        "string"
-                          ? item.question
-                          : "",
-                      answer:
-                        typeof item.answer ===
-                        "string"
-                          ? item.answer
-                          : "",
-                      score:
-                        typeof item.score ===
-                        "number"
-                          ? item.score
-                          : 0,
-                      feedback:
-                        typeof item.feedback ===
-                        "string"
-                          ? item.feedback
-                          : "",
-                    })
-                  )
-                )
-              ),
-            {
-              method: "POST",
-            }
-          );
-
-          if (!scorecardResponse.ok) {
-            throw new Error(
-              "Unable to generate final scorecard."
-            );
-          }
-
-          const scorecardData =
-            await scorecardResponse.json();
-
-          setFinalScorecard(scorecardData);
-        } catch (scorecardError) {
-          console.error(
-            "Scorecard error:",
-            scorecardError
-          );
-
-          setError(
-            "Interview completed, but final scorecard could not be generated."
-          );
-        }
-
-        setVideoInterviewCompleted(true);
+      // Prevent duplicate processing
+      if (processed) {
         return;
       }
 
-      // -----------------------------
-      // NEXT QUESTION
-      // -----------------------------
+      const finalAnswer = finalTranscript.trim();
 
-      if (nextQuestionData.next_question) {
-  const nextQuestion =
-    nextQuestionData.next_question;
+      if (!finalAnswer) {
+        return;
+      }
 
-  // Find matching question in database
-  const matchingQuestion = videoQuestionsRef.current.find((item) => {
-  const dbQuestion = item.question.toLowerCase().trim();
-  const nextQuestionText = nextQuestion.toLowerCase().trim();
+      processed = true;
 
-  return (
-    dbQuestion === nextQuestionText ||
-    (dbQuestion.includes("list") &&
-      dbQuestion.includes("tuple") &&
-      nextQuestionText.includes("list") &&
-      nextQuestionText.includes("tuple")) ||
-    (dbQuestion.includes("fastapi") &&
-      nextQuestionText.includes("fastapi")) ||
-    (dbQuestion.includes("primary key") &&
-      dbQuestion.includes("foreign key") &&
-      nextQuestionText.includes("primary key") &&
-      nextQuestionText.includes("foreign key")) ||
-    (dbQuestion.includes("let") &&
-      dbQuestion.includes("const") &&
-      dbQuestion.includes("var") &&
-      nextQuestionText.includes("let") &&
-      nextQuestionText.includes("const") &&
-      nextQuestionText.includes("var")) ||
-    (dbQuestion.includes("technical project") &&
-      nextQuestionText.includes("technical project")) ||
-    (dbQuestion.includes("introduce yourself") &&
-      nextQuestionText.includes("introduce yourself"))
+      try {
+        setLoading(true);
+        setError("");
+
+        // -----------------------------
+        // AI ANSWER EVALUATION
+        // -----------------------------
+
+        const response = await fetch(
+          "http://127.0.0.1:8000/ai/analyze-video-answer?question=" +
+            encodeURIComponent(questionText) +
+            "&answer=" +
+            encodeURIComponent(finalAnswer),
+          {
+            method: "POST",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("AI evaluation failed.");
+        }
+
+        const data = await response.json();
+
+        setAiResult(data);
+
+        const newEvaluation = {
+          question: questionText,
+          answer: finalAnswer,
+          score:
+            typeof data.score === "number"
+              ? data.score
+              : 0,
+          feedback:
+            typeof data.feedback === "string"
+              ? data.feedback
+              : "",
+        };
+
+        // Save video interview answer to database
+        if (questionId) {
+          let answerId = null;
+
+          // Try to save the answer
+          const saveAnswerResponse = await fetch(
+            `http://127.0.0.1:8000/interviews/${interviewId}/answers`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                question_id: questionId,
+                answer: finalAnswer,
+              }),
+            }
+          );
+
+          if (saveAnswerResponse.ok) {
+            const savedAnswerData =
+              await saveAnswerResponse.json();
+
+            answerId = savedAnswerData.answer_id;
+          } else if (saveAnswerResponse.status === 400) {
+            // Answer already exists — use the existing answer
+            const answersResponse = await fetch(
+              `http://127.0.0.1:8000/interviews/${interviewId}/answers`
+            );
+
+            if (answersResponse.ok) {
+              const answers =
+                await answersResponse.json();
+
+              const existingAnswer = answers.find(
+                (item) =>
+                  item.question_id === questionId
+              );
+
+              if (existingAnswer) {
+                answerId = existingAnswer.answer_id;
+              }
+            }
+
+            console.log(
+              "Answer already exists. Using existing answer:",
+              answerId
+            );
+          } else {
+            const errorData =
+              await saveAnswerResponse.text();
+
+            console.error(
+              "Unable to save video interview answer:",
+              errorData
+            );
+          }
+
+          // Save AI score and feedback
+          if (
+            answerId &&
+            data.score !== undefined
+          ) {
+            const evaluationResponse = await fetch(
+              `http://127.0.0.1:8000/interviews/${interviewId}/answers/${answerId}/evaluation?score=${encodeURIComponent(
+                data.score
+              )}&feedback=${encodeURIComponent(
+                data.feedback || ""
+              )}`,
+              {
+                method: "PUT",
+              }
+            );
+
+            if (!evaluationResponse.ok) {
+              const evaluationError =
+                await evaluationResponse.text();
+
+              console.error(
+                "Unable to save evaluation:",
+                evaluationError
+              );
+            }
+          }
+        }
+
+        const updatedEvaluations = [
+          ...videoEvaluationsRef.current,
+          newEvaluation,
+        ];
+
+        videoEvaluationsRef.current =
+          updatedEvaluations;
+
+        setVideoEvaluations(updatedEvaluations);
+
+        // -----------------------------
+        // GENERATE NEXT QUESTION
+        // -----------------------------
+
+        const nextQuestionResponse = await fetch(
+          "http://127.0.0.1:8000/ai/generate-next-question?answer=" +
+            encodeURIComponent(finalAnswer) +
+            "&current_question=" +
+            encodeURIComponent(questionText),
+          {
+            method: "POST",
+          }
+        );
+
+        if (!nextQuestionResponse.ok) {
+          throw new Error(
+            "Unable to generate next question."
+          );
+        }
+
+        const nextQuestionData =
+          await nextQuestionResponse.json();
+
+        // -----------------------------
+        // INTERVIEW COMPLETED
+        // -----------------------------
+
+        if (nextQuestionData.interview_completed) {
+          try {
+            const scorecardResponse = await fetch(
+              "http://127.0.0.1:8000/ai/generate-final-scorecard?evaluations=" +
+                encodeURIComponent(
+                  JSON.stringify(
+                    updatedEvaluations.map(
+                      (item) => ({
+                        question:
+                          typeof item.question ===
+                          "string"
+                            ? item.question
+                            : "",
+                        answer:
+                          typeof item.answer ===
+                          "string"
+                            ? item.answer
+                            : "",
+                        score:
+                          typeof item.score ===
+                          "number"
+                            ? item.score
+                            : 0,
+                        feedback:
+                          typeof item.feedback ===
+                          "string"
+                            ? item.feedback
+                            : "",
+                      })
+                    )
+                  )
+                ),
+              {
+                method: "POST",
+              }
+            );
+
+            if (!scorecardResponse.ok) {
+              throw new Error(
+                "Unable to generate final scorecard."
+              );
+            }
+
+            const scorecardData =
+  await scorecardResponse.json();
+
+/*
+  Get the real candidate_id from the backend interview.
+  We do NOT hardcode candidate_id because interview IDs
+  and candidate IDs can change.
+*/
+let actualCandidateId = null;
+
+try {
+  const interviewInfoResponse = await fetch(
+    `http://127.0.0.1:8000/interviews/${interviewId}/scorecard`
   );
-});
-console.log("NEXT QUESTION FROM BACKEND:", nextQuestion);
-console.log("QUESTIONS LOADED IN FRONTEND:", videoQuestions);
-console.log("MATCHING QUESTION:", matchingQuestion);
-  if (!matchingQuestion) {
-    throw new Error(
-      "Next interview question was not found in the database."
-    );
+
+  if (interviewInfoResponse.ok) {
+    const interviewInfo =
+      await interviewInfoResponse.json();
+
+    actualCandidateId =
+      interviewInfo?.candidate_id ?? null;
   }
-
-  setVideoQuestion(nextQuestion);
-  setVideoQuestionId(
-    matchingQuestion.question_id
-  );
-
-  setTranscript("");
-  setAiResult(null);
-
-  speakQuestion(
-    nextQuestion,
-    true,
-    matchingQuestion.question_id
+} catch (candidateIdError) {
+  console.error(
+    "Unable to get interview candidate ID:",
+    candidateIdError
   );
 }
-    } catch (err) {
-      console.error(err);
 
-      setError(
-        "Unable to evaluate your answer."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  recognition.start();
-
-  // Start initial silence timer
-  resetSilenceTimer();
+const scorecardToSave = {
+  ...scorecardData,
+  candidate_id: actualCandidateId,
+  interview_id: interviewId,
 };
+
+/*
+  Save using the actual candidate ID.
+  This prevents one candidate's scorecard from
+  appearing in another candidate's profile.
+*/
+if (actualCandidateId !== null) {
+  localStorage.setItem(
+    `latestInterviewScorecard_${actualCandidateId}`,
+    JSON.stringify(scorecardToSave)
+  );
+}
+
+/*
+  Keep the legacy key too, but with the real candidate ID.
+  App.jsx will only use this if the candidate ID matches.
+*/
+localStorage.setItem(
+  "latestInterviewScorecard",
+  JSON.stringify(scorecardToSave)
+);
+
+setFinalScorecard(scorecardData);
+          } catch (scorecardError) {
+            console.error(
+              "Scorecard error:",
+              scorecardError
+            );
+
+            setError(
+              "Interview completed, but final scorecard could not be generated."
+            );
+          }
+
+          setVideoInterviewCompleted(true);
+          return;
+        }
+
+        // -----------------------------
+        // NEXT QUESTION
+        // -----------------------------
+
+        if (nextQuestionData.next_question) {
+          const nextQuestion =
+            nextQuestionData.next_question;
+
+          // Find matching question in database
+          const matchingQuestion =
+            videoQuestionsRef.current.find((item) => {
+              const dbQuestion =
+                item.question.toLowerCase().trim();
+
+              const nextQuestionText =
+                nextQuestion.toLowerCase().trim();
+
+              return (
+                dbQuestion === nextQuestionText ||
+                (dbQuestion.includes("list") &&
+                  dbQuestion.includes("tuple") &&
+                  nextQuestionText.includes("list") &&
+                  nextQuestionText.includes("tuple")) ||
+                (dbQuestion.includes("fastapi") &&
+                  nextQuestionText.includes("fastapi")) ||
+                (dbQuestion.includes("primary key") &&
+                  dbQuestion.includes("foreign key") &&
+                  nextQuestionText.includes("primary key") &&
+                  nextQuestionText.includes("foreign key")) ||
+                (dbQuestion.includes("let") &&
+                  dbQuestion.includes("const") &&
+                  dbQuestion.includes("var") &&
+                  nextQuestionText.includes("let") &&
+                  nextQuestionText.includes("const") &&
+                  nextQuestionText.includes("var")) ||
+                (dbQuestion.includes("technical project") &&
+                  nextQuestionText.includes("technical project")) ||
+                (dbQuestion.includes("introduce yourself") &&
+                  nextQuestionText.includes("introduce yourself"))
+              );
+            });
+
+          console.log(
+            "NEXT QUESTION FROM BACKEND:",
+            nextQuestion
+          );
+
+          console.log(
+            "QUESTIONS LOADED IN FRONTEND:",
+            videoQuestions
+          );
+
+          console.log(
+            "MATCHING QUESTION:",
+            matchingQuestion
+          );
+
+          if (!matchingQuestion) {
+            throw new Error(
+              "Next interview question was not found in the database."
+            );
+          }
+
+          setVideoQuestion(nextQuestion);
+
+          setVideoQuestionId(
+            matchingQuestion.question_id
+          );
+
+          setVideoQuestionIndex(
+            (previousIndex) =>
+              previousIndex + 1
+          );
+
+          setTranscript("");
+          setAiResult(null);
+
+          speakQuestion(
+            nextQuestion,
+            true,
+            matchingQuestion.question_id
+          );
+        }
+      } catch (err) {
+        console.error(err);
+
+        setError(
+          "Unable to evaluate your answer."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    recognition.start();
+
+    // Start initial silence timer
+    resetSilenceTimer();
+  };
 
   // =========================
   // START STAGE 2
@@ -647,6 +725,7 @@ console.log("MATCHING QUESTION:", matchingQuestion);
           method: "POST",
         }
       );
+
       setLoading(true);
       setError("");
 
@@ -665,12 +744,14 @@ console.log("MATCHING QUESTION:", matchingQuestion);
       const data = await response.json();
 
       const allQuestions = Array.isArray(data)
-      ? data
-      : [data];
-      
+        ? data
+        : [data];
+
       const questionList = allQuestions.filter(
         (item) =>
-          [8, 9, 10, 11, 12].includes(item.question_id)
+          [8, 9, 10, 11, 12].includes(
+            item.question_id
+          )
       );
 
       if (questionList.length === 0) {
@@ -685,41 +766,6 @@ console.log("MATCHING QUESTION:", matchingQuestion);
       setSubmitted(false);
       setSavedEvaluation(false);
       setAiResult(null);
-
-      // // Load previously submitted answers
-      // const answersResponse = await fetch(
-      //   "http://127.0.0.1:8000/interviews/" +
-      //     interviewId +
-      //     "/answers"
-      // );
-
-      // if (answersResponse.ok) {
-      //   const answers =
-      //     await answersResponse.json();
-
-      //   const currentAnswer = answers.find(
-      //     (item) =>
-      //       item.question_id ===
-      //       questionList[0].question_id
-      //   );
-
-      //   if (currentAnswer) {
-      //     setAnswer(
-      //       currentAnswer.answer || ""
-      //     );
-
-      //     setSubmitted(true);
-
-      //     if (currentAnswer.score !== null) {
-      //       setAiResult({
-      //         score: currentAnswer.score,
-      //         feedback:
-      //           currentAnswer.feedback,
-      //         source: "Saved Evaluation",
-      //       });
-      //     }
-      //   }
-      // }
 
       setStarted(true);
     } catch (err) {
@@ -864,170 +910,408 @@ console.log("MATCHING QUESTION:", matchingQuestion);
 
   // ============================================================
   // FINAL SCORECARD SCREEN
-  // IMPORTANT:
-  // This is OUTSIDE useEffect.
   // ============================================================
   if (finalScorecard) {
     return (
       <div
         style={{
           minHeight: "100vh",
-          background: "#f5f7fb",
-          padding: "40px",
+          background:
+            "linear-gradient(135deg, #0f172a 0%, #111827 50%, #172033 100%)",
+          padding: "24px",
           fontFamily: "Arial, sans-serif",
           boxSizing: "border-box",
         }}
       >
         <div
           style={{
-            maxWidth: "800px",
+            maxWidth: "1100px",
             margin: "0 auto",
-            background: "#ffffff",
-            padding: "35px",
-            borderRadius: "16px",
+            background: "#111827",
+            padding: "32px",
+            borderRadius: "22px",
+            border: "1px solid #334155",
             boxShadow:
-              "0 4px 20px rgba(0,0,0,0.08)",
+              "0 20px 50px rgba(0,0,0,0.35)",
+            boxSizing: "border-box",
           }}
         >
-          <h1
+          {/* HEADER */}
+          <div
             style={{
               textAlign: "center",
-              marginBottom: "10px",
+              marginBottom: "32px",
             }}
           >
-            📊 Final AI Interview Scorecard
-          </h1>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "58px",
+                height: "58px",
+                borderRadius: "16px",
+                background:
+                  "linear-gradient(135deg, #2563eb, #7c3aed)",
+                fontSize: "28px",
+                marginBottom: "14px",
+                boxShadow:
+                  "0 8px 25px rgba(37,99,235,0.3)",
+              }}
+            >
+              📊
+            </div>
 
-          <p
-            style={{
-              textAlign: "center",
-              color: "#64748b",
-              marginBottom: "30px",
-            }}
-          >
-            Your AI video interview has been
-            completed successfully.
-          </p>
+            <h1
+              style={{
+                margin: 0,
+                color: "#f8fafc",
+                fontSize: "30px",
+                fontWeight: "700",
+              }}
+            >
+              Final AI Interview Scorecard
+            </h1>
+
+            <p
+              style={{
+                marginTop: "10px",
+                marginBottom: 0,
+                color: "#94a3b8",
+                fontSize: "15px",
+              }}
+            >
+              Your AI video interview has been
+              completed successfully.
+            </p>
+          </div>
 
           {/* SCORE DETAILS */}
           <div
             style={{
-              background: "#f8fafc",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "14px",
+              marginTop: "20px",
             }}
           >
-            <p>
-              <strong>
-                Technical Knowledge:
-              </strong>{" "}
-              {
-                finalScorecard.technical_knowledge
-              }
-              /10
-            </p>
+            {/* TECHNICAL KNOWLEDGE */}
+            <div
+              style={{
+                padding: "20px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "14px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "8px",
+                }}
+              >
+                Technical Knowledge
+              </div>
 
-            <p>
-              <strong>
-                Communication:
-              </strong>{" "}
-              {finalScorecard.communication}
-              /10
-            </p>
+              <div
+                style={{
+                  color: "#60a5fa",
+                  fontSize: "26px",
+                  fontWeight: "700",
+                }}
+              >
+                {
+                  finalScorecard.technical_knowledge
+                }
+                /10
+              </div>
+            </div>
 
-            <p>
-              <strong>
-                Answer Relevance:
-              </strong>{" "}
-              {
-                finalScorecard.answer_relevance
-              }
-              /10
-            </p>
+            {/* COMMUNICATION */}
+            <div
+              style={{
+                padding: "20px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "14px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "8px",
+                }}
+              >
+                Communication
+              </div>
 
-            <p>
-              <strong>
-                Problem Solving:
-              </strong>{" "}
-              {
-                finalScorecard.problem_solving
-              }
-              /10
-            </p>
+              <div
+                style={{
+                  color: "#60a5fa",
+                  fontSize: "26px",
+                  fontWeight: "700",
+                }}
+              >
+                {finalScorecard.communication}
+                /10
+              </div>
+            </div>
+
+            {/* ANSWER RELEVANCE */}
+            <div
+              style={{
+                padding: "20px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "14px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "8px",
+                }}
+              >
+                Answer Relevance
+              </div>
+
+              <div
+                style={{
+                  color: "#60a5fa",
+                  fontSize: "26px",
+                  fontWeight: "700",
+                }}
+              >
+                {
+                  finalScorecard.answer_relevance
+                }
+                /10
+              </div>
+            </div>
+
+            {/* PROBLEM SOLVING */}
+            <div
+              style={{
+                padding: "20px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "14px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "8px",
+                }}
+              >
+                Problem Solving
+              </div>
+
+              <div
+                style={{
+                  color: "#60a5fa",
+                  fontSize: "26px",
+                  fontWeight: "700",
+                }}
+              >
+                {
+                  finalScorecard.problem_solving
+                }
+                /10
+              </div>
+            </div>
           </div>
 
           {/* OVERALL SCORE */}
           <div
             style={{
-              marginTop: "25px",
-              padding: "25px",
-              background: "#f0fdf4",
+              marginTop: "24px",
+              padding: "28px",
+              background:
+                "linear-gradient(135deg, #132e24, #163b2b)",
               border:
-                "1px solid #86efac",
-              borderRadius: "12px",
+                "1px solid rgba(74,222,128,0.35)",
+              borderRadius: "16px",
               textAlign: "center",
+              boxShadow:
+                "0 10px 30px rgba(34,197,94,0.08)",
             }}
           >
-            <h2
+            <div
               style={{
-                margin: 0,
-                color: "#166534",
+                color: "#86efac",
+                fontSize: "13px",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                marginBottom: "8px",
               }}
             >
-              Overall Score:{" "}
-              {finalScorecard.overall_score}
-              /10
-            </h2>
+              Overall Interview Score
+            </div>
+
+            <div
+              style={{
+                color: "#4ade80",
+                fontSize: "38px",
+                fontWeight: "800",
+              }}
+            >
+              {finalScorecard.overall_score}/10
+            </div>
           </div>
 
           {/* AI FEEDBACK */}
           <div
             style={{
-              marginTop: "25px",
-              padding: "20px",
-              background: "#eef6ff",
-              border:
-                "1px solid #93c5fd",
-              borderRadius: "12px",
+              marginTop: "24px",
+              padding: "22px",
+              background: "#172033",
+              border: "1px solid #334155",
+              borderRadius: "16px",
             }}
           >
-            <h3>🤖 AI Feedback</h3>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "14px",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "34px",
+                  height: "34px",
+                  borderRadius: "10px",
+                  background:
+                    "rgba(59,130,246,0.15)",
+                  fontSize: "18px",
+                }}
+              >
+                🤖
+              </span>
+
+              <h3
+                style={{
+                  margin: 0,
+                  color: "#60a5fa",
+                  fontSize: "18px",
+                }}
+              >
+                AI Feedback
+              </h3>
+            </div>
 
             <p
               style={{
-                lineHeight: "1.6",
+                margin: 0,
+                color: "#dbeafe",
+                lineHeight: "1.7",
+                fontSize: "15px",
               }}
             >
               {finalScorecard.feedback}
             </p>
           </div>
 
-          {/* TOTAL QUESTIONS */}
-          <p
+          {/* INTERVIEW SUMMARY */}
+          <div
             style={{
-              marginTop: "20px",
-              textAlign: "center",
-              color: "#475569",
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "14px",
+              marginTop: "24px",
             }}
           >
-            <strong>
-              Total Questions:
-            </strong>{" "}
-            {finalScorecard.total_questions}
-          </p>
+            <div
+              style={{
+                padding: "18px",
+                background: "#0f172a",
+                border: "1px solid #334155",
+                borderRadius: "12px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "6px",
+                }}
+              >
+                Total Questions
+              </div>
+
+              <div
+                style={{
+                  color: "#f8fafc",
+                  fontSize: "22px",
+                  fontWeight: "700",
+                }}
+              >
+                {finalScorecard.total_questions}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "18px",
+                background: "#0f172a",
+                border: "1px solid #334155",
+                borderRadius: "12px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                  marginBottom: "6px",
+                }}
+              >
+                Interview Status
+              </div>
+
+              <div
+                style={{
+                  color: "#4ade80",
+                  fontSize: "16px",
+                  fontWeight: "700",
+                }}
+              >
+                ✓ Completed
+              </div>
+            </div>
+          </div>
 
           {/* SOURCE */}
-          <p
+          <div
             style={{
+              marginTop: "22px",
+              paddingTop: "18px",
+              borderTop: "1px solid #1f2937",
               textAlign: "center",
-              color: "#94a3b8",
-              fontSize: "13px",
             }}
           >
-            {finalScorecard.source}
-          </p>
+            <span
+              style={{
+                color: "#64748b",
+                fontSize: "12px",
+              }}
+            >
+              {finalScorecard.source}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -1041,46 +1325,135 @@ console.log("MATCHING QUESTION:", matchingQuestion);
       <div
         style={{
           minHeight: "100vh",
-          background: "#f5f7fb",
-          padding: "40px",
+          background:
+            "linear-gradient(135deg, #0f172a 0%, #111827 50%, #172033 100%)",
+          padding: "24px",
           fontFamily: "Arial, sans-serif",
           boxSizing: "border-box",
         }}
       >
         <div
           style={{
-            maxWidth: "900px",
+            maxWidth: "1200px",
             margin: "0 auto",
-            background: "#ffffff",
-            padding: "35px",
-            borderRadius: "16px",
+            background: "#111827",
+            padding: "30px",
+            borderRadius: "22px",
+            border: "1px solid #334155",
             boxShadow:
-              "0 4px 20px rgba(0,0,0,0.08)",
+              "0 20px 50px rgba(0,0,0,0.35)",
+            boxSizing: "border-box",
           }}
         >
-          <h1>
-            AI Video Interview 🎥🤖
-          </h1>
-
-          <p
+          {/* HEADER */}
+          <div
             style={{
-              color: "#64748b",
+              marginBottom: "8px",
             }}
           >
-            Your AI interviewer will ask
-            questions verbally. Speak clearly
-            after the AI finishes speaking.
-          </p>
+            <h1
+              style={{
+                margin: 0,
+                color: "#ffffff",
+                fontSize: "30px",
+              }}
+            >
+              AI Video Interview
+            </h1>
+
+            <p
+              style={{
+                marginTop: "8px",
+                marginBottom: 0,
+                color: "#94a3b8",
+                fontSize: "14px",
+              }}
+            >
+              Your AI interviewer will ask questions
+              verbally. Speak clearly after the AI
+              finishes speaking.
+            </p>
+          </div>
+
+          {/* INTERVIEW PROGRESS */}
+          <div
+            style={{
+              marginTop: "24px",
+              marginBottom: "25px",
+              padding: "18px",
+              background: "#172033",
+              border: "1px solid #334155",
+              borderRadius: "14px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "15px",
+                marginBottom: "10px",
+                color: "#cbd5e1",
+                fontSize: "14px",
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: "600",
+                }}
+              >
+                AI Video Interview
+              </span>
+
+              <span>
+                Question{" "}
+                {videoQuestionIndex + 1}{" "}
+                of 6
+              </span>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                height: "8px",
+                background: "#334155",
+                borderRadius: "10px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width:
+                    videoQuestions.length > 0 &&
+                    videoQuestionId
+                      ? `${
+                          ((videoQuestionIndex + 1) /
+                            6) *
+                          100
+                        }%`
+                      : "0%",
+                  height: "100%",
+                  background:
+                    "linear-gradient(90deg, #3b82f6, #7c3aed)",
+                  borderRadius: "10px",
+                  transition:
+                    "width 0.4s ease",
+                }}
+              />
+            </div>
+          </div>
 
           {/* ERROR */}
           {error && (
             <div
               style={{
                 marginTop: "15px",
-                background: "#fee2e2",
-                color: "#991b1b",
+                background: "rgba(127,29,29,0.35)",
+                border:
+                  "1px solid rgba(248,113,113,0.35)",
+                color: "#fca5a5",
                 padding: "15px",
-                borderRadius: "8px",
+                borderRadius: "10px",
               }}
             >
               {error}
@@ -1090,8 +1463,10 @@ console.log("MATCHING QUESTION:", matchingQuestion);
           {/* VIDEO CALL AREA */}
           <div
             style={{
-              display: "flex",
-              gap: "20px",
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "18px",
               marginTop: "25px",
               marginBottom: "25px",
             }}
@@ -1099,55 +1474,104 @@ console.log("MATCHING QUESTION:", matchingQuestion);
             {/* AI INTERVIEWER */}
             <div
               style={{
-                flex: 1,
-                minHeight: "300px",
-                background: "#111827",
-                borderRadius: "12px",
+                minHeight: "340px",
+                background:
+                  "linear-gradient(145deg, #1e293b, #0f172a)",
+                borderRadius: "16px",
+                overflow: "hidden",
+                position: "relative",
+                border: "1px solid #334155",
+                boxShadow:
+                  "0 8px 25px rgba(0,0,0,0.25)",
                 display: "flex",
-                flexDirection:
-                  "column",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent:
-                  "center",
-                color: "white",
+                justifyContent: "center",
+                color: "#ffffff",
               }}
             >
+              {/* AI AVATAR */}
               <div
                 style={{
                   width: "120px",
                   height: "120px",
                   borderRadius: "50%",
-                  background: "#374151",
+                  background:
+                    "linear-gradient(135deg, #3b82f6, #7c3aed)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent:
-                    "center",
-                  fontSize: "60px",
+                  justifyContent: "center",
+                  fontSize: "58px",
+                  boxShadow:
+                    aiSpeaking
+                      ? "0 0 0 8px rgba(59,130,246,0.15), 0 0 35px rgba(59,130,246,0.5)"
+                      : "0 8px 25px rgba(0,0,0,0.3)",
+                  transition: "0.3s ease",
                 }}
               >
                 🤖
               </div>
 
-              <h3>
+              <h3
+                style={{
+                  marginTop: "18px",
+                  marginBottom: "7px",
+                  fontSize: "20px",
+                }}
+              >
                 AI Interviewer
               </h3>
 
-              <p>
+              <div
+                style={{
+                  padding: "7px 14px",
+                  borderRadius: "20px",
+                  background: aiSpeaking
+                    ? "rgba(59,130,246,0.15)"
+                    : "rgba(34,197,94,0.15)",
+                  color: aiSpeaking
+                    ? "#60a5fa"
+                    : "#4ade80",
+                  fontSize: "14px",
+                  border: aiSpeaking
+                    ? "1px solid rgba(96,165,250,0.2)"
+                    : "1px solid rgba(74,222,128,0.2)",
+                }}
+              >
                 {aiSpeaking
                   ? "🔊 AI is speaking..."
                   : "🎤 Listening for your answer"}
-              </p>
+              </div>
+
+              {/* STATUS BADGE */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "14px",
+                  left: "14px",
+                  background: "#0f172a",
+                  color: "#cbd5e1",
+                  padding: "6px 10px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  border: "1px solid #334155",
+                }}
+              >
+                AI
+              </div>
             </div>
 
             {/* CANDIDATE VIDEO */}
             <div
               style={{
-                flex: 1,
-                minHeight: "300px",
-                background: "#111827",
-                borderRadius: "12px",
+                minHeight: "340px",
+                background: "#020617",
+                borderRadius: "16px",
                 overflow: "hidden",
                 position: "relative",
+                border: "1px solid #334155",
+                boxShadow:
+                  "0 8px 25px rgba(0,0,0,0.25)",
               }}
             >
               <video
@@ -1157,25 +1581,47 @@ console.log("MATCHING QUESTION:", matchingQuestion);
                 muted
                 style={{
                   width: "100%",
-                  height: "300px",
+                  height: "340px",
                   objectFit: "cover",
+                  display: "block",
                 }}
               />
 
+              {/* YOU LABEL */}
               <div
                 style={{
                   position: "absolute",
-                  bottom: "10px",
-                  left: "10px",
+                  bottom: "14px",
+                  left: "14px",
                   background:
-                    "rgba(0,0,0,0.6)",
-                  color: "white",
-                  padding:
-                    "5px 10px",
-                  borderRadius: "5px",
+                    "rgba(15,23,42,0.88)",
+                  color: "#ffffff",
+                  padding: "7px 12px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  border: "1px solid #334155",
                 }}
               >
                 You
+              </div>
+
+              {/* CAMERA STATUS */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "14px",
+                  right: "14px",
+                  background:
+                    "rgba(15,23,42,0.88)",
+                  color: "#4ade80",
+                  padding: "6px 10px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  border: "1px solid rgba(74,222,128,0.2)",
+                }}
+              >
+                ● Camera On
               </div>
             </div>
           </div>
@@ -1184,21 +1630,33 @@ console.log("MATCHING QUESTION:", matchingQuestion);
           <div
             style={{
               marginTop: "20px",
-              padding: "20px",
-              background: "#f8fafc",
-              border:
-                "1px solid #e5e7eb",
-              borderRadius: "10px",
+              padding: "22px",
+              background:
+                "linear-gradient(145deg, #1e293b, #172033)",
+              border: "1px solid #334155",
+              borderRadius: "14px",
+              boxShadow:
+                "0 6px 20px rgba(0,0,0,0.18)",
             }}
           >
-            <h3>
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: "12px",
+                color: "#60a5fa",
+                fontSize: "16px",
+              }}
+            >
               🤖 AI Question
             </h3>
 
             <p
               style={{
-                fontSize: "17px",
+                margin: 0,
+                color: "#f8fafc",
+                fontSize: "18px",
                 lineHeight: "1.6",
+                fontWeight: "500",
               }}
             >
               {videoQuestion}
@@ -1210,20 +1668,51 @@ console.log("MATCHING QUESTION:", matchingQuestion);
             <div
               style={{
                 marginTop: "20px",
-                padding: "15px",
-                background: "#f8fafc",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "10px",
+                padding: "18px 20px",
+                background: "#111827",
+                border: "1px solid #374151",
+                borderRadius: "14px",
+                boxShadow:
+                  "0 6px 20px rgba(0,0,0,0.18)",
               }}
             >
-              <h3>
-                🎤 Candidate Response
-              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                <span
+                  style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    background: "#22c55e",
+                    display: "inline-block",
+                    boxShadow:
+                      "0 0 10px rgba(34,197,94,0.5)",
+                  }}
+                />
+
+                <h3
+                  style={{
+                    margin: 0,
+                    color: "#f9fafb",
+                    fontSize: "16px",
+                  }}
+                >
+                  Live Transcript
+                </h3>
+              </div>
 
               <p
                 style={{
-                  lineHeight: "1.6",
+                  margin: 0,
+                  color: "#d1d5db",
+                  lineHeight: "1.7",
+                  fontSize: "15px",
                 }}
               >
                 {transcript}
@@ -1237,79 +1726,191 @@ console.log("MATCHING QUESTION:", matchingQuestion);
               style={{
                 marginTop: "20px",
                 padding: "20px",
-                background: "#eef6ff",
-                border:
-                  "1px solid #93c5fd",
-                borderRadius: "10px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "14px",
+                boxShadow:
+                  "0 6px 20px rgba(0,0,0,0.18)",
               }}
             >
-              <h3>
+              <h3
+                style={{
+                  marginTop: 0,
+                  marginBottom: "16px",
+                  color: "#60a5fa",
+                  fontSize: "17px",
+                }}
+              >
                 🤖 AI Evaluation
               </h3>
 
-              <p>
-                <strong>
-                  Score:
-                </strong>{" "}
-                {aiResult.score}/10
-              </p>
+              {/* SCORE */}
+              <div
+                style={{
+                  marginBottom: "14px",
+                  padding: "14px",
+                  background: "#1e293b",
+                  borderRadius: "10px",
+                  border: "1px solid #334155",
+                }}
+              >
+                <strong
+                  style={{
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                  }}
+                >
+                  Score
+                </strong>
 
-              <p>
-                <strong>
-                  Feedback:
-                </strong>{" "}
-                {aiResult.feedback}
-              </p>
+                <div
+                  style={{
+                    marginTop: "4px",
+                    color: "#22c55e",
+                    fontSize: "24px",
+                    fontWeight: "700",
+                  }}
+                >
+                  {aiResult.score}/10
+                </div>
+              </div>
 
-              <p>
-                <strong>
-                  Evaluation Source:
-                </strong>{" "}
-                {aiResult.source}
-              </p>
+              {/* FEEDBACK */}
+              <div
+                style={{
+                  marginBottom: "14px",
+                  padding: "14px",
+                  background: "#1e293b",
+                  borderRadius: "10px",
+                  border: "1px solid #334155",
+                }}
+              >
+                <strong
+                  style={{
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                  }}
+                >
+                  Feedback
+                </strong>
+
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#e2e8f0",
+                    lineHeight: "1.6",
+                    fontSize: "15px",
+                  }}
+                >
+                  {aiResult.feedback}
+                </p>
+              </div>
+
+              {/* EVALUATION SOURCE */}
+              <div
+                style={{
+                  padding: "14px",
+                  background: "#1e293b",
+                  borderRadius: "10px",
+                  border: "1px solid #334155",
+                }}
+              >
+                <strong
+                  style={{
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                  }}
+                >
+                  Evaluation Source
+                </strong>
+
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#94a3b8",
+                    fontSize: "14px",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  {aiResult.source}
+                </p>
+              </div>
             </div>
           )}
 
           {/* LOADING */}
           {loading && (
-            <p
+            <div
               style={{
                 marginTop: "20px",
-                color: "#2563eb",
-                fontWeight: "bold",
+                padding: "16px 18px",
+                background: "#172033",
+                border: "1px solid #334155",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
               }}
             >
-              🤖 AI is evaluating your
-              answer...
-            </p>
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  background: "#60a5fa",
+                  boxShadow:
+                    "0 0 12px rgba(96,165,250,0.7)",
+                }}
+              />
+
+              <span
+                style={{
+                  color: "#cbd5e1",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                }}
+              >
+                🤖 AI is evaluating your answer...
+              </span>
+            </div>
           )}
 
           {/* MANUAL MICROPHONE BUTTON */}
           {!aiSpeaking &&
             !loading &&
             !videoInterviewCompleted && (
-              <button
-                onClick={() =>
-                  startSpeechRecognition(
-                    videoQuestion,
-                    videoQuestionId
-                  )
-                }
+              <div
                 style={{
-                  marginTop: "20px",
-                  padding:
-                    "12px 25px",
-                  border: "none",
-                  borderRadius: "8px",
-                  background:
-                    "#2563eb",
-                  color: "#fff",
-                  fontSize: "16px",
-                  cursor: "pointer",
+                  textAlign: "center",
+                  marginTop: "22px",
                 }}
               >
-                🎤 Start Speaking
-              </button>
+                <button
+                  onClick={() =>
+                    startSpeechRecognition(
+                      videoQuestion,
+                      videoQuestionId
+                    )
+                  }
+                  style={{
+                    padding: "13px 28px",
+                    border: "none",
+                    borderRadius: "10px",
+                    background:
+                      "linear-gradient(135deg, #2563eb, #4f46e5)",
+                    color: "white",
+                    fontSize: "15px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    boxShadow:
+                      "0 6px 18px rgba(37,99,235,0.3)",
+                    transition:
+                      "all 0.2s ease",
+                  }}
+                >
+                  🎤 Start Speaking
+                </button>
+              </div>
             )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -16,14 +16,25 @@ function App() {
   // RECRUITER LOGIN
   // =========================================================
 
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem("recruiterLoggedIn") === "true";
-  });
-
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState("");
+const [isLoggedIn, setIsLoggedIn] = useState(() => {
+  return localStorage.getItem("recruiterLoggedIn") === "true";
+});
+const [loginEmail, setLoginEmail] = useState("");
+const [loginPassword, setLoginPassword] = useState("");
+const [showPassword, setShowPassword] = useState(false);
+const [loginError, setLoginError] = useState("");
+const [showSignup, setShowSignup] = useState(false);
+const [signupName, setSignupName] = useState("");
+const [signupEmail, setSignupEmail] = useState("");
+const [signupPassword, setSignupPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [showForgotPassword, setShowForgotPassword] = useState(false);
+const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+const [resetToken, setResetToken] = useState("");
+const [newPassword, setNewPassword] = useState("");
+const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+const GOOGLE_CLIENT_ID =
+  "545768782793-m34ctmi4a6ogkbpgho31ttj1mbm1kcim.apps.googleusercontent.com";
 
   // =========================================================
   // CURRENT VIEW
@@ -134,7 +145,7 @@ function App() {
   // RECRUITER LOGIN
   // =========================================================
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     setLoginError("");
@@ -144,30 +155,301 @@ function App() {
     if (!email || !loginPassword) {
       setLoginError("Please enter email and password.");
       return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password: loginPassword,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Invalid email or password."
+      );
     }
 
-    const validEmail = "recruiter@recruitai.com";
-    const validPassword = "RecruitAI@123";
+    localStorage.setItem("recruiterLoggedIn", "true");
+    localStorage.setItem(
+      "accessToken",
+      data.access_token
+    );
 
-    if (email === validEmail && loginPassword === validPassword) {
-      localStorage.setItem("recruiterLoggedIn", "true");
+    setIsLoggedIn(true);
+    setLoginEmail("");
+    setLoginPassword("");
+    setLoginError("");
+  } catch (err) {
+    setLoginError(
+      err.message || "Unable to login."
+    );
+  }
+};
 
-      setIsLoggedIn(true);
-      setLoginEmail("");
-      setLoginPassword("");
-      setLoginError("");
-    } else {
-      setLoginError("Invalid email or password.");
+const handleForgotPassword = async (e) => {
+  e.preventDefault();
+
+  setLoginError("");
+
+  const email = forgotPasswordEmail.trim();
+
+  if (!email) {
+    setLoginError("Please enter your email.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/auth/forgot-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to reset password."
+      );
     }
-  };
 
+    if (data?.reset_token) {
+  setResetToken(data.reset_token);
+  setLoginError(
+    "Reset token generated. Enter your new password below."
+  );
+} else {
+  setLoginError(
+    "Unable to generate a reset token."
+  );
+}
+  } catch (err) {
+    setLoginError(
+      err.message || "Unable to reset password."
+    );
+  }
+};
+
+const handleResetPassword = async (e) => {
+  e.preventDefault();
+
+  setLoginError("");
+
+  if (!resetToken) {
+    setLoginError("Reset token is missing.");
+    return;
+  }
+
+  if (!newPassword || !resetConfirmPassword) {
+    setLoginError("Please enter and confirm your new password.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/auth/reset-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reset_token: resetToken,
+          new_password: newPassword,
+          confirm_password: resetConfirmPassword,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to reset password."
+      );
+    }
+
+    setLoginEmail(forgotPasswordEmail);
+    setForgotPasswordEmail("");
+    setResetToken("");
+    setNewPassword("");
+    setResetConfirmPassword("");
+    setShowForgotPassword(false);
+
+    setLoginError(
+      "Password reset successfully. Please login with your new password."
+    );
+  } catch (err) {
+    setLoginError(
+      err.message || "Unable to reset password."
+    );
+  }
+};
+
+const handleGoogleLogin = async (response) => {
+  setLoginError("");
+
+  if (!response?.credential) {
+    setLoginError("Google login failed. Please try again.");
+    return;
+  }
+
+  try {
+    const backendResponse = await fetch(
+      "http://127.0.0.1:8000/auth/google",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: response.credential,
+        }),
+      }
+    );
+
+    const data = await backendResponse.json();
+
+    if (!backendResponse.ok) {
+      throw new Error(
+        data?.detail || "Google login failed."
+      );
+    }
+
+    localStorage.setItem("recruiterLoggedIn", "true");
+    localStorage.setItem(
+      "accessToken",
+      data.access_token
+    );
+
+    setIsLoggedIn(true);
+    setLoginError("");
+  } catch (err) {
+    setLoginError(
+      err.message || "Unable to login with Google."
+    );
+  }
+};
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+
+    setLoginError("");
+
+    const name = signupName.trim();
+    const email = signupEmail.trim();
+    const password = signupPassword;
+    const confirmPasswordValue = confirmPassword;
+
+    if (!name || !email || !password || !confirmPasswordValue) {
+      setLoginError("Please fill in all signup fields.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setLoginError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setLoginError(
+        "Password must contain at least one uppercase letter."
+      );
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      setLoginError(
+        "Password must contain at least one lowercase letter."
+      );
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setLoginError(
+        "Password must contain at least one number."
+      );
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setLoginError(
+        "Password must contain at least one special character."
+      );
+      return;
+    }
+
+    if (password !== confirmPasswordValue) {
+      setLoginError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            role: "recruiter",
+          }),
+        }
+      );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to create account."
+      );
+    }
+
+    setLoginEmail(email);
+    setLoginPassword(password);
+    setSignupName("");
+    setSignupEmail("");
+    setSignupPassword("");
+    setConfirmPassword("");
+    setShowSignup(false);
+    setLoginError(
+      "Account created successfully. Please login."
+    );
+  } catch (err) {
+    setLoginError(
+      err.message || "Unable to create account."
+    );
+  }
+};
   // =========================================================
   // LOGOUT
   // =========================================================
 
   const handleLogout = () => {
     localStorage.removeItem("recruiterLoggedIn");
-
+    localStorage.removeItem("accessToken");
     setIsLoggedIn(false);
     setCandidates([]);
     setSelectedCandidate(null);
@@ -239,6 +521,55 @@ function App() {
     }
   }, [isLoggedIn]);
 
+  useEffect(() => {
+  if (isLoggedIn || showSignup) {
+    return;
+  }
+
+  const initializeGoogleSignIn = () => {
+    if (!window.google) {
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleLogin,
+    });
+
+    const googleButton = document.getElementById(
+      "googleSignInButton"
+    );
+
+    if (googleButton) {
+      googleButton.innerHTML = "";
+
+      window.google.accounts.id.renderButton(
+        googleButton,
+        {
+          theme: "outline",
+          size: "large",
+          width: 320,
+          text: "continue_with",
+          shape: "rectangular",
+        }
+      );
+    }
+  };
+
+  if (window.google) {
+    initializeGoogleSignIn();
+  } else {
+    const timer = setInterval(() => {
+      if (window.google) {
+        clearInterval(timer);
+        initializeGoogleSignIn();
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
+  }
+}, [isLoggedIn, showSignup]);
+
   // =========================================================
   // RESET PAGE WHEN SEARCH / FILTER / SORT CHANGES
   // =========================================================
@@ -306,27 +637,65 @@ function App() {
       }
 
       const data = await response.json();
-      // Load AI interview scorecard
-if (candidate.id === 1) {
-  try {
-    const scorecardResponse = await fetch(
-      "http://127.0.0.1:8000/interviews/2/scorecard"
-    );
+// Load AI interview scorecard for THIS candidate only
+try {
+  setInterviewScorecard(null);
 
-    if (scorecardResponse.ok) {
-      const scorecardData = await scorecardResponse.json();
+  /*
+    First try the candidate-specific scorecard.
+    Example:
+    latestInterviewScorecard_1
+    latestInterviewScorecard_3
+  */
+  const candidateScorecardKey =
+    `latestInterviewScorecard_${candidate.id}`;
+
+  const candidateScorecard =
+    localStorage.getItem(candidateScorecardKey);
+
+  if (candidateScorecard) {
+    const scorecardData =
+      JSON.parse(candidateScorecard);
+
+    if (
+      scorecardData &&
+      scorecardData.candidate_id !== null &&
+      Number(scorecardData.candidate_id) ===
+        Number(candidate.id)
+    ) {
       setInterviewScorecard(scorecardData);
-    } else {
-      setInterviewScorecard(null);
     }
-  } catch (scorecardError) {
-    console.error(
-      "Interview scorecard error:",
-      scorecardError
-    );
-    setInterviewScorecard(null);
+  } else {
+    /*
+      Backward compatibility with the old key.
+      Only use it if the stored candidate_id matches
+      the profile currently being opened.
+    */
+    const legacyScorecard =
+      localStorage.getItem(
+        "latestInterviewScorecard"
+      );
+
+    if (legacyScorecard) {
+      const scorecardData =
+        JSON.parse(legacyScorecard);
+
+      if (
+        scorecardData &&
+        scorecardData.candidate_id !== null &&
+        Number(scorecardData.candidate_id) ===
+          Number(candidate.id)
+      ) {
+        setInterviewScorecard(scorecardData);
+      }
+    }
   }
-} else {
+} catch (scorecardError) {
+  console.error(
+    "Interview scorecard error:",
+    scorecardError
+  );
+
   setInterviewScorecard(null);
 }
 
@@ -787,6 +1156,16 @@ if (candidate.id === 1) {
         );
       }
 
+      if (
+        data?.message ===
+        "This candidate has already been analyzed for this job description."
+      ) {
+        setError(
+          "This candidate has already been analyzed for this job description."
+        );
+        return;
+      }
+
       const normalizedResult =
         normalizeAnalysisResult(data);
 
@@ -1019,7 +1398,6 @@ if (candidate.id === 1) {
           "This candidate is a strong match for the job requirements and is recommended for further consideration.",
         className:
           "recommendation-strong",
-        icon: "⭐",
       };
     }
 
@@ -1031,7 +1409,7 @@ if (candidate.id === 1) {
           "This candidate partially matches the job requirements and should be reviewed by the recruiter.",
         className:
           "recommendation-review",
-        icon: "⚡",
+        icon: "   ",
       };
     }
 
@@ -1041,7 +1419,7 @@ if (candidate.id === 1) {
         "This candidate has a relatively low match with the current job requirements.",
       className:
         "recommendation-low",
-      icon: "⚠",
+      icon: "   ",
     };
   };
 
@@ -1267,62 +1645,258 @@ if (candidate.id === 1) {
               marginBottom: "24px",
             }}
           >
-            <h2
-              style={{
-                margin:
-                  "0 0 8px",
-                fontSize: "22px",
-                color: "#111827",
-              }}
-            >
-              Recruiter Login
-            </h2>
+
+            
+<h2
+  style={{
+    margin:
+      "0 0 8px",
+    fontSize: "22px",
+    color: "#111827",
+}}
+>
+  {showSignup
+    ? "Create Recruiter Account"
+    : "Recruiter Login"}
+</h2>
 
             <p
-              style={{
-                margin: 0,
-                color: "#64748b",
-                fontSize: "14px",
-              }}
-            >
-              Sign in to access
-              your recruitment
-              dashboard.
-            </p>
+  style={{
+    margin: 0,
+    color: "#64748b",
+    fontSize: "14px",
+  }}
+>
+  {showSignup
+    ? "Create your recruiter account to get started."
+    : "Sign in to access your recruitment dashboard."}
+</p>
           </div>
 
           <form
-            onSubmit={handleLogin}
-          >
-            <div
-              style={{
-                marginBottom:
-                  "20px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  marginBottom:
-                    "8px",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "#374151",
-                }}
-              >
-                Email Address
-              </label>
+  onSubmit={
+    showForgotPassword
+      ? resetToken
+        ? handleResetPassword
+        : handleForgotPassword
+      : showSignup
+        ? handleSignup
+        : handleLogin
+  }
+>
+{showForgotPassword ? (
+  <div>
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
+      Registered Email
+    </label>
+
+    <input
+      type="email"
+      placeholder="Enter your registered email"
+      value={forgotPasswordEmail}
+      onChange={(e) => {
+        setForgotPasswordEmail(e.target.value);
+        setLoginError("");
+      }}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "13px 14px",
+        border: "1px solid #d1d5db",
+        borderRadius: "10px",
+        fontSize: "14px",
+        outline: "none",
+        background: "#ffffff",
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={handleForgotPassword}
+      style={{
+        width: "100%",
+        marginTop: "16px",
+        padding: "14px",
+        border: "none",
+        borderRadius: "10px",
+        background:
+          "linear-gradient(135deg, #4f46e5, #7c3aed)",
+        color: "#ffffff",
+        fontSize: "15px",
+        fontWeight: "700",
+        cursor: "pointer",
+      }}
+    >
+      Generate Reset Token
+    </button>
+    {resetToken && (
+  <div style={{ marginTop: "18px" }}>
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
+      New Password
+    </label>
+
+    <input
+      type="password"
+      placeholder="Enter new password"
+      value={newPassword}
+      onChange={(e) => {
+        setNewPassword(e.target.value);
+        setLoginError("");
+      }}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "13px 14px",
+        border: "1px solid #d1d5db",
+        borderRadius: "10px",
+        fontSize: "14px",
+        outline: "none",
+        background: "#ffffff",
+      }}
+    />
+
+    <label
+      style={{
+        display: "block",
+        marginTop: "14px",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
+      Confirm New Password
+    </label>
+
+    <input
+      type="password"
+      placeholder="Confirm new password"
+      value={resetConfirmPassword}
+      onChange={(e) => {
+        setResetConfirmPassword(e.target.value);
+        setLoginError("");
+      }}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "13px 14px",
+        border: "1px solid #d1d5db",
+        borderRadius: "10px",
+        fontSize: "14px",
+        outline: "none",
+        background: "#ffffff",
+      }}
+    />
+
+    <button
+      type="submit"
+      style={{
+        width: "100%",
+        marginTop: "16px",
+        padding: "14px",
+        border: "none",
+        borderRadius: "10px",
+        background:
+          "linear-gradient(135deg, #4f46e5, #7c3aed)",
+        color: "#ffffff",
+        fontSize: "15px",
+        fontWeight: "700",
+        cursor: "pointer",
+      }}
+    >
+      Reset Password
+    </button>
+  </div>
+)}
+  </div>
+) : (
+  <div>
+  {showSignup && (
+    <div
+      style={{
+        marginBottom: "20px",
+      }}
+    >
+      <label
+        style={{
+          display: "block",
+          marginBottom: "8px",
+          fontSize: "14px",
+          fontWeight: "600",
+          color: "#374151",
+        }}
+      >
+        Full Name
+      </label>
+
+      <input
+        type="text"
+        placeholder="Enter recruiter name"
+        value={signupName}
+        onChange={(e) => {
+          setSignupName(e.target.value);
+          setLoginError("");
+        }}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "13px 14px",
+          border: "1px solid #d1d5db",
+          borderRadius: "10px",
+          fontSize: "14px",
+          outline: "none",
+          background: "#ffffff",
+        }}
+      />
+    </div>
+  )}
+
+  <div
+    style={{
+      marginBottom: "20px",
+    }}
+  >
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
+      Email Address
+    </label>
 
               <input
                 type="email"
                 placeholder="Enter recruiter email"
-                value={loginEmail}
+                value={showSignup ? signupEmail : loginEmail}
                 onChange={(e) => {
-                  setLoginEmail(
-                    e.target.value
-                  );
-                  setLoginError("");
-                }}
+  if (showSignup) {
+    setSignupEmail(e.target.value);
+  } else {
+    setLoginEmail(e.target.value);
+  }
+
+  setLoginError("");
+}}
                 style={{
                   width: "100%",
                   boxSizing:
@@ -1374,14 +1948,19 @@ if (candidate.id === 1) {
                   }
                   placeholder="Enter password"
                   value={
-                    loginPassword
+                    showSignup
+                    ? signupPassword
+                    : loginPassword
                   }
                   onChange={(e) => {
-                    setLoginPassword(
-                      e.target.value
-                    );
-                    setLoginError("");
-                  }}
+  if (showSignup) {
+    setSignupPassword(e.target.value);
+  } else {
+    setLoginPassword(e.target.value);
+  }
+
+  setLoginError("");
+}}
                   style={{
                     width: "100%",
                     boxSizing:
@@ -1431,6 +2010,46 @@ if (candidate.id === 1) {
               </div>
             </div>
 
+            {showSignup && (
+  <div
+    style={{
+      marginBottom: "18px",
+    }}
+  >
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
+      Confirm Password
+    </label>
+
+    <input
+      type="password"
+      placeholder="Confirm your password"
+      value={confirmPassword}
+      onChange={(e) => {
+        setConfirmPassword(e.target.value);
+        setLoginError("");
+      }}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "13px 14px",
+        border: "1px solid #d1d5db",
+        borderRadius: "10px",
+        fontSize: "14px",
+        outline: "none",
+        background: "#ffffff",
+      }}
+    />
+  </div>
+)}
+
             {loginError && (
               <div
                 style={{
@@ -1449,7 +2068,7 @@ if (candidate.id === 1) {
                     "13px",
                 }}
               >
-                ⚠ {loginError}
+                    {loginError}
               </div>
             )}
 
@@ -1472,9 +2091,84 @@ if (candidate.id === 1) {
                   "0 8px 20px rgba(79, 70, 229, 0.22)",
               }}
             >
-              Login to Dashboard
+
+  
+              {showSignup
+              ? "Create Account"
+              : "Login to Dashboard"}
             </button>
-          </form>
+            {!showSignup && (
+              <div
+                id="googleSignInButton"
+                style={{
+                  marginTop: "14px",
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              ></div>
+            )}
+
+            {!showSignup && (
+  <div
+    style={{
+      marginTop: "14px",
+      textAlign: "right",
+    }}
+  >
+    <button
+      type="button"
+      onClick={() => {
+        setShowForgotPassword(true);
+        setLoginError("");
+      }}
+      style={{
+        border: "none",
+        background: "transparent",
+        color: "#4f46e5",
+        fontSize: "13px",
+        fontWeight: "600",
+        cursor: "pointer",
+        padding: 0,
+      }}
+    >
+      Forgot Password?
+    </button>
+  </div>
+)}
+
+            <div
+  style={{
+    marginTop: "18px",
+    textAlign: "center",
+    fontSize: "14px",
+    color: "#64748b",
+  }}
+>
+  {showSignup
+    ? "Already have an account? "
+    : "Don't have an account? "}
+
+  <button
+    type="button"
+    onClick={() => {
+      setShowSignup(!showSignup);
+      setLoginError("");
+    }}
+    style={{
+      border: "none",
+      background: "transparent",
+      color: "#4f46e5",
+      fontWeight: "700",
+      cursor: "pointer",
+      padding: 0,
+    }}
+  >
+    {showSignup ? "Login" : "Create Account"}
+  </button>
+</div>
+</div>
+)}
+</form>
 
           <div
             style={{
@@ -1566,7 +2260,7 @@ if (candidate.id === 1) {
               fontWeight: "600",
             }}
           >
-            ← Back to Dashboard
+                Back to Dashboard
           </button>
 
           <strong
@@ -1575,7 +2269,7 @@ if (candidate.id === 1) {
               color: "#111827",
             }}
           >
-            RecruitAI — AI Interview
+            RecruitAI     AI Interview
           </strong>
         </div>
 
@@ -1622,7 +2316,7 @@ if (candidate.id === 1) {
               setCurrentView("dashboard")
             }
           >
-            <span>▦</span>
+            <span>   </span>
             Dashboard
           </a>
 
@@ -1633,7 +2327,7 @@ if (candidate.id === 1) {
               setCurrentView("dashboard")
             }
           >
-            <span>♙</span>
+            <span>   </span>
             Candidates
           </a>
 
@@ -1644,7 +2338,7 @@ if (candidate.id === 1) {
               setCurrentView("dashboard")
             }
           >
-            <span>▤</span>
+            <span>   </span>
             Resume Analysis
           </a>
 
@@ -1663,7 +2357,7 @@ if (candidate.id === 1) {
               fontFamily: "inherit",
             }}
           >
-            <span>🎤</span>
+            <span>    </span>
             AI Interview
           </button>
 
@@ -1706,7 +2400,7 @@ if (candidate.id === 1) {
               fontWeight: "600",
             }}
           >
-            🚪 Logout
+                 Logout
           </button>
 
         </div>
@@ -1745,7 +2439,7 @@ if (candidate.id === 1) {
           >
             {dashboardLoading
               ? "Refreshing..."
-              : "↻ Refresh"}
+              : "    Refresh"}
           </button>
 
         </div>
@@ -1754,13 +2448,13 @@ if (candidate.id === 1) {
 
         {deleteMessage && (
           <div className="delete-success-message">
-            ✓ {deleteMessage}
+                {deleteMessage}
           </div>
         )}
 
         {error && (
           <div className="error">
-            ⚠ {error}
+                {error}
           </div>
         )}
 
@@ -1773,7 +2467,7 @@ if (candidate.id === 1) {
             <div className="stat-top">
 
               <span className="stat-icon blue">
-                👥
+                    
               </span>
 
               <span className="stat-label">
@@ -1821,7 +2515,7 @@ if (candidate.id === 1) {
             <div className="stat-top">
 
               <span className="stat-icon green">
-                ↑
+                   
               </span>
 
               <span className="stat-label">
@@ -1845,7 +2539,7 @@ if (candidate.id === 1) {
             <div className="stat-top">
 
               <span className="stat-icon orange">
-                ★
+                   
               </span>
 
               <span className="stat-label">
@@ -1893,7 +2587,7 @@ if (candidate.id === 1) {
             <div className="overview-card">
 
               <div className="overview-icon shortlisted-icon">
-                ✓
+                   
               </div>
 
               <div className="overview-content">
@@ -1941,7 +2635,7 @@ if (candidate.id === 1) {
             <div className="overview-card">
 
               <div className="overview-icon rejected-icon">
-                ×
+                  
               </div>
 
               <div className="overview-content">
@@ -2083,7 +2777,7 @@ if (candidate.id === 1) {
               <div className="search-box">
 
                 <span>
-                  ⌕
+                     
                 </span>
 
                 <input
@@ -2168,7 +2862,7 @@ if (candidate.id === 1) {
             <div className="empty-candidates-state">
 
               <div className="empty-candidates-icon">
-                👥
+                    
               </div>
 
               <h3>
@@ -2283,13 +2977,13 @@ if (candidate.id === 1) {
 
                                 {actualRank ===
                                 0
-                                  ? "🥇 #1"
+                                  ? "     #1"
                                   : actualRank ===
                                     1
-                                  ? "🥈 #2"
+                                  ? "     #2"
                                   : actualRank ===
                                     2
-                                  ? "🥉 #3"
+                                  ? "     #3"
                                   : `#${
                                       actualRank +
                                       1
@@ -2415,7 +3109,7 @@ if (candidate.id === 1) {
                                   deletingCandidate
                                 }
                               >
-                                🗑️ Delete
+                                        Delete
                               </button>
 
                             </td>
@@ -2452,7 +3146,7 @@ if (candidate.id === 1) {
                       1
                     }
                   >
-                    ← Previous
+                   
                   </button>
 
                   <div className="pagination-pages">
@@ -2507,7 +3201,7 @@ if (candidate.id === 1) {
                       totalPages
                     }
                   >
-                    Next →
+                    Next    
                   </button>
 
                 </div>
@@ -2603,7 +3297,7 @@ if (candidate.id === 1) {
                       )
                     }
                   >
-                    📄 View Resume
+                         View Resume
                   </button>
 
                   <button
@@ -2617,7 +3311,7 @@ if (candidate.id === 1) {
                       deletingCandidate
                     }
                   >
-                    🗑️ Delete
+                            Delete
                   </button>
 
                   <button
@@ -2628,7 +3322,7 @@ if (candidate.id === 1) {
                       )
                     }
                   >
-                    ×
+                    
                   </button>
 
                 </div>
@@ -2695,7 +3389,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        📧 Email
+                             Email
                       </span>
 
                       <strong>
@@ -2710,7 +3404,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        📱 Phone
+                             Phone
                       </span>
 
                       <strong>
@@ -2725,7 +3419,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        🛠 Skills Score
+                        Skills Score
                       </span>
 
                       <strong>
@@ -2744,7 +3438,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        🎓 Qualification
+                        Qualification
                       </span>
 
                       <strong>
@@ -2759,7 +3453,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        💼 Experience
+                        Experience
                       </span>
 
                       <strong>
@@ -2774,7 +3468,7 @@ if (candidate.id === 1) {
                     <div className="profile-info">
 
                       <span>
-                        🧠 Semantic Match
+                        Semantic Match
                       </span>
 
                       <strong>
@@ -2797,7 +3491,7 @@ if (candidate.id === 1) {
                   <div className="profile-section">
 
                     <h3>
-                      🛠 Skills
+                      Skills
                     </h3>
 
                     <div className="skill-list">
@@ -2820,7 +3514,7 @@ if (candidate.id === 1) {
                                 index
                               }
                             >
-                              ✓{" "}
+                              {" "}
                               {skill}
                             </span>
 
@@ -2844,7 +3538,7 @@ if (candidate.id === 1) {
                   <div className="profile-section">
 
                     <h3>
-                      🎓 Education
+                      Education
                     </h3>
 
                     {displayArray(
@@ -2858,7 +3552,7 @@ if (candidate.id === 1) {
                   <div className="profile-section">
 
                     <h3>
-                      💼 Experience
+                           Experience
                     </h3>
 
                     {displayArray(
@@ -2866,31 +3560,48 @@ if (candidate.id === 1) {
                     )}
 
                   </div>
-                                    {/* AI INTERVIEW SCORECARD */}
+                  {/* AI INTERVIEW SCORECARD */}
 
                   {interviewScorecard && (
                     <div className="profile-section">
 
-                      <h3>🎥 AI Interview Scorecard</h3>
+                      <h3>AI Interview Scorecard</h3>
+
+                      <p
+                        style={{
+                          marginTop: "6px",
+                          marginBottom: "18px",
+                          color: "#6b7280"
+                        }}
+                      >
+                        AI-generated score based on the candidate's
+                        technical video interview.
+                      </p>
 
                       <div className="candidate-info-grid">
 
                         <div>
                           <span>Overall Interview Score</span>
-                          <strong>
-                            {interviewScorecard.overall_score}/10
+
+                          <strong style={{ fontSize: "28px" }}>
+                            {Number(
+                              interviewScorecard.overall_score || 0
+                            ).toFixed(1)}
+                            /10
                           </strong>
                         </div>
 
                         <div>
                           <span>Questions Evaluated</span>
+
                           <strong>
-                            {interviewScorecard.evaluated_questions || 0}
+                            {interviewScorecard.evaluated_questions || interviewScorecard.total_questions || 0}
                           </strong>
                         </div>
 
                         <div>
                           <span>Total Questions</span>
+
                           <strong>
                             {interviewScorecard.total_questions || 0}
                           </strong>
@@ -2898,52 +3609,72 @@ if (candidate.id === 1) {
 
                       </div>
 
+                      <div
+                        style={{
+                          marginTop: "18px",
+                          padding: "12px 14px",
+                          background: "#f8fafc",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          color: "#475569"
+                        }}
+                      >
+                        <strong>Important:</strong>{" "}
+                        This interview score is separate from the
+                        resume/job matching score shown above.
+                      </div>
+
                       <div style={{ marginTop: "20px" }}>
 
-                        {interviewScorecard.answers?.map(
-                          (answer, index) => (
-                            <div
-                              key={answer.answer_id || index}
-                              style={{
-                                padding: "14px",
-                                marginBottom: "12px",
-                                border: "1px solid #e5e7eb",
-                                borderRadius: "10px"
-                              }}
-                            >
+                        {Array.isArray(interviewScorecard.answers) &&
+                          interviewScorecard.answers.map(
+                            (answer, index) => (
+                              <div
+                                key={
+                                  answer.answer_id || index
+                                }
+                                style={{
+                                  padding: "14px",
+                                  marginBottom: "12px",
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: "10px"
+                                }}
+                              >
 
-                              <strong>
-                                Question {index + 1}
-                              </strong>
-
-                              <p style={{ margin: "8px 0" }}>
-                                Score:{" "}
                                 <strong>
-                                  {answer.score}/10
+                                  Question {index + 1}
                                 </strong>
-                              </p>
 
-                              <p style={{ margin: 0 }}>
-                                {answer.feedback ||
-                                  "No feedback available."}
-                              </p>
+                                <p style={{ margin: "8px 0" }}>
+                                  Score:{" "}
+                                  <strong>
+                                    {Number(
+                                      answer.score || 0
+                                    ).toFixed(1)}
+                                    /10
+                                  </strong>
+                                </p>
 
-                            </div>
-                          )
-                        )}
+                                <p style={{ margin: 0 }}>
+                                  {answer.feedback ||
+                                    "No feedback available."}
+                                </p>
+
+                              </div>
+                            )
+                          )}
 
                       </div>
 
                     </div>
                   )}
 
-
                   {/* EXTRACURRICULAR */}
 
                   <div className="profile-section">
 
                     <h3>
-                      ⭐ Extracurricular Activities
+                          Extracurricular Activities
                     </h3>
 
                     {displayArray(
@@ -2957,7 +3688,7 @@ if (candidate.id === 1) {
                   <div className="profile-section">
 
                     <h3>
-                      🤖 AI Recommendation
+                      AI Recommendation
                     </h3>
 
                     {(() => {
@@ -3038,7 +3769,7 @@ if (candidate.id === 1) {
                       <div className="breakdown-label">
 
                         <span>
-                          🧠 Semantic Match
+                          Semantic Match
                         </span>
 
                         <strong>
@@ -3076,7 +3807,7 @@ if (candidate.id === 1) {
                       <div className="breakdown-label">
 
                         <span>
-                          🛠 Skills Match
+                          Skills Match
                         </span>
 
                         <strong>
@@ -3114,7 +3845,7 @@ if (candidate.id === 1) {
                       <div className="breakdown-label">
 
                         <span>
-                          💼 Experience
+                          Experience
                         </span>
 
                         <strong>
@@ -3207,7 +3938,7 @@ if (candidate.id === 1) {
                     {statusMessage && (
 
                       <p className="status-success-message">
-                        ✓{" "}
+                        {" "}
                         {
                           statusMessage
                         }
@@ -3260,7 +3991,6 @@ if (candidate.id === 1) {
             >
 
               <div className="delete-modal-icon">
-                🗑️
               </div>
 
               <h2>
@@ -3373,7 +4103,7 @@ if (candidate.id === 1) {
                 />
 
                 <div className="upload-icon">
-                  ↑
+                     
                 </div>
 
                 <strong>
@@ -3720,7 +4450,7 @@ if (candidate.id === 1) {
                             index
                           }
                         >
-                          ✓{" "}
+                             {" "}
                           {skill}
                         </span>
 
@@ -3797,7 +4527,7 @@ if (candidate.id === 1) {
                   </h3>
 
                   <span className="success-icon">
-                    ✓
+                       
                   </span>
 
                 </div>
@@ -3904,9 +4634,7 @@ if (candidate.id === 1) {
 
               <div className="recommendation-banner">
 
-                <span>
-                  ⭐
-                </span>
+            
 
                 <strong>
                   {
@@ -3924,7 +4652,7 @@ if (candidate.id === 1) {
                 <div className="strength-box">
 
                   <h3>
-                    ✓ Strengths
+                    Strengths
                   </h3>
 
                   <ul>
@@ -3975,7 +4703,7 @@ if (candidate.id === 1) {
                 <div className="gap-box">
 
                   <h3>
-                    ⚠ Gaps
+                    Gaps
                   </h3>
 
                   <ul>
