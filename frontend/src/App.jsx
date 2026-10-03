@@ -17,7 +17,7 @@ function App() {
   // =========================================================
 
 const [isLoggedIn, setIsLoggedIn] = useState(() => {
-  return localStorage.getItem("recruiterLoggedIn") === "true";
+  return localStorage.getItem("accessToken") !== null;
 });
 const [loginEmail, setLoginEmail] = useState("");
 const [loginPassword, setLoginPassword] = useState("");
@@ -28,6 +28,7 @@ const [signupName, setSignupName] = useState("");
 const [signupEmail, setSignupEmail] = useState("");
 const [signupPassword, setSignupPassword] = useState("");
 const [confirmPassword, setConfirmPassword] = useState("");
+const [signupRole, setSignupRole] = useState("candidate");
 const [showForgotPassword, setShowForgotPassword] = useState(false);
 const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
 const [resetToken, setResetToken] = useState("");
@@ -40,7 +41,293 @@ const GOOGLE_CLIENT_ID =
   // CURRENT VIEW
   // =========================================================
 
-  const [currentView, setCurrentView] = useState("dashboard");
+  const [currentView, setCurrentView] = useState(() => {
+    return localStorage.getItem("currentView") || "dashboard";
+  });
+  const [jobs, setJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [applications, setApplications] = useState([]);
+const [applicationsLoading, setApplicationsLoading] = useState(false);
+
+const [candidateProfile, setCandidateProfile] = useState(null);
+const [editingProfile, setEditingProfile] = useState(false);
+
+const [profileForm, setProfileForm] = useState({
+  phone: "",
+  education: "",
+  experience: "",
+  skills: "",
+});
+  useEffect(() => {
+    localStorage.setItem("currentView", currentView);
+  }, [currentView]);
+  useEffect(() => {
+  const loadJobs = async () => {
+    setJobsLoading(true);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/jobs"
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to load jobs.");
+      }
+
+      const data = await response.json();
+
+      setJobs(data);
+    } catch (err) {
+      console.error("Jobs loading error:", err);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+    if (currentView === "dashboard") {
+    loadJobs();
+  }
+}, [currentView]);
+
+  useEffect(() => {
+  const loadApplications = async () => {
+    const token = localStorage.getItem("accessToken");
+    const role = localStorage.getItem("userRole");
+
+    if (!token) {
+      return;
+    }
+
+    setApplicationsLoading(true);
+
+    try {
+      const endpoint =
+        role === "recruiter"
+          ? "http://127.0.0.1:8000/recruiter/applications"
+          : "http://127.0.0.1:8000/applications/my";
+
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to load applications.");
+      }
+
+      const data = await response.json();
+
+      setApplications(data);
+    } catch (err) {
+      console.error("Applications loading error:", err);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  if (
+    currentView === "applications" ||
+    currentView === "dashboard"
+  ) {
+    loadApplications();
+  }
+}, [currentView]);
+
+
+const applyForJob = async (jobId) => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token) {
+    alert("Please login again.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/jobs/${jobId}/apply`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to apply for this job."
+      );
+    }
+
+    alert("Application submitted successfully!");
+
+    setApplications((prev) => [
+      ...prev,
+      {
+        application_id: data.application_id,
+        job_id: data.job_id,
+        candidate_id: data.candidate_id,
+        status: data.status,
+      },
+    ]);
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+const updateApplicationStatus = async (applicationId, status) => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token) {
+    alert("Please login again.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/applications/${applicationId}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: status,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to update application status."
+      );
+    }
+
+    setApplications((previous) =>
+      previous.map((application) =>
+        application.application_id === applicationId
+          ? {
+              ...application,
+              status: data.status,
+            }
+          : application
+      )
+    );
+
+    alert("Application status updated successfully!");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+const loadCandidateProfile = async () => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token) {
+    return;
+  }
+
+  setProfileLoading(true);
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/candidate/profile",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      setCandidateProfile(null);
+
+      setProfileForm({
+        phone: "",
+        education: "",
+        experience: "",
+        skills: "",
+      });
+
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Unable to load profile.");
+    }
+
+    const data = await response.json();
+
+    setCandidateProfile(data);
+
+    setProfileForm({
+      phone: data.phone || "",
+      education: data.education || "",
+      experience: data.experience || "",
+      skills: data.skills || "",
+    });
+  } catch (err) {
+    console.error("Profile loading error:", err);
+  } finally {
+    setProfileLoading(false);
+  }
+};
+
+
+const saveCandidateProfile = async () => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token) {
+    alert("Please login again.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/candidate/profile",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileForm),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail || "Unable to save profile."
+      );
+    }
+
+    setCandidateProfile(data);
+    setEditingProfile(false);
+
+    alert("Profile updated successfully!");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+
+useEffect(() => {
+  if (currentView === "profile") {
+    loadCandidateProfile();
+  }
+}, [currentView]);
+
+  useEffect(() => {
+    console.log("CURRENT VIEW:", currentView);
+  }, [currentView]);
 
   // =========================================================
   // BASIC STATES
@@ -185,6 +472,7 @@ const GOOGLE_CLIENT_ID =
       "accessToken",
       data.access_token
     );
+    localStorage.setItem("userRole", data.role);
 
     setIsLoggedIn(true);
     setLoginEmail("");
@@ -339,6 +627,7 @@ const handleGoogleLogin = async (response) => {
       "accessToken",
       data.access_token
     );
+    localStorage.setItem("userRole", data.role);
 
     setIsLoggedIn(true);
     setLoginError("");
@@ -414,7 +703,7 @@ const handleGoogleLogin = async (response) => {
             name,
             email,
             password,
-            role: "recruiter",
+            role: signupRole,
           }),
         }
       );
@@ -2025,6 +2314,47 @@ try {
         color: "#374151",
       }}
     >
+      Register As
+    </label>
+
+    <select
+      value={signupRole}
+      onChange={(e) => {
+        setSignupRole(e.target.value);
+        setLoginError("");
+      }}
+      style={{
+        width: "100%",
+        boxSizing: "border-box",
+        padding: "13px 14px",
+        border: "1px solid #d1d5db",
+        borderRadius: "10px",
+        fontSize: "14px",
+        outline: "none",
+        background: "#ffffff",
+      }}
+    >
+      <option value="candidate">Candidate</option>
+      <option value="recruiter">Recruiter</option>
+    </select>
+  </div>
+)}
+
+            {showSignup && (
+  <div
+    style={{
+      marginBottom: "18px",
+    }}
+  >
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "600",
+        color: "#374151",
+      }}
+    >
       Confirm Password
     </label>
 
@@ -2277,6 +2607,771 @@ try {
       </div>
     );
   }
+
+  const userRole = localStorage.getItem("userRole");
+
+  if (currentView === "jobs") {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fb",
+        padding: "40px",
+        fontFamily: "Inter, Arial, sans-serif",
+      }}
+    >
+      <button
+        onClick={() => setCurrentView("dashboard")}
+        style={{
+          padding: "10px 18px",
+          border: "1px solid #d1d5db",
+          borderRadius: "8px",
+          background: "#ffffff",
+          cursor: "pointer",
+          fontWeight: "600",
+        }}
+      >
+        ← Back to Dashboard
+      </button>
+
+      <h1
+        style={{
+          marginTop: "30px",
+          color: "#111827",
+        }}
+      >
+        Available Jobs
+      </h1>
+      {jobsLoading ? (
+  <p style={{ color: "#64748b" }}>
+    Loading jobs...
+  </p>
+) : jobs.length === 0 ? (
+  <p style={{ color: "#64748b" }}>
+    No jobs available right now.
+  </p>
+) : (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat(auto-fit, minmax(280px, 1fr))",
+      gap: "20px",
+      marginTop: "25px",
+    }}
+  >
+    {jobs.map((job) => (
+      <div
+        key={job.job_id}
+        style={{
+          background: "#ffffff",
+          padding: "22px",
+          borderRadius: "14px",
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#111827",
+          }}
+        >
+          {job.title}
+        </h2>
+
+        <p style={{ color: "#64748b" }}>
+          {job.description || "No job description available."}
+        </p>
+
+        <button
+        onClick={() => applyForJob(job.job_id)}
+          style={{
+            marginTop: "10px",
+            padding: "10px 18px",
+            border: "none",
+            borderRadius: "8px",
+            background: "#4f46e5",
+            color: "#ffffff",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          Apply Now
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+    </div>
+  );
+}
+
+if (userRole === "candidate") {
+  if (currentView === "profile") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#f5f7fb",
+          fontFamily: "Inter, Arial, sans-serif",
+          padding: "40px",
+        }}
+      >
+        <button
+          onClick={() => setCurrentView("dashboard")}
+          style={{
+            padding: "10px 18px",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            background: "#ffffff",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        <div
+          style={{
+            maxWidth: "800px",
+            margin: "30px auto",
+            background: "#ffffff",
+            padding: "30px",
+            borderRadius: "14px",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h1 style={{ color: "#111827" }}>
+            My Profile
+          </h1>
+
+          {profileLoading ? (
+            <p style={{ color: "#64748b" }}>
+              Loading profile...
+            </p>
+          ) : (
+            <>
+              {[
+                ["Phone", "phone"],
+                ["Education", "education"],
+                ["Experience", "experience"],
+                ["Skills", "skills"],
+              ].map(([label, field]) => (
+                <div
+                  key={field}
+                  style={{ marginTop: "18px" }}
+                >
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "7px",
+                      fontWeight: "600",
+                      color: "#374151",
+                    }}
+                  >
+                    {label}
+                  </label>
+
+                  {editingProfile ? (
+                    <textarea
+                      value={profileForm[field]}
+                      onChange={(e) =>
+                        setProfileForm({
+                          ...profileForm,
+                          [field]: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        padding: "11px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        minHeight:
+                          field === "skills"
+                            ? "80px"
+                            : "45px",
+                        fontFamily: "inherit",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        padding: "12px",
+                        background: "#f8fafc",
+                        borderRadius: "8px",
+                        color: "#475569",
+                      }}
+                    >
+                      {candidateProfile?.[field] ||
+                        "Not provided"}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div style={{ marginTop: "25px" }}>
+                {editingProfile ? (
+                  <>
+                    <button
+                      onClick={saveCandidateProfile}
+                      style={{
+                        padding: "10px 18px",
+                        border: "none",
+                        borderRadius: "8px",
+                        background: "#4f46e5",
+                        color: "#ffffff",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Save Profile
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditingProfile(false);
+                        loadCandidateProfile();
+                      }}
+                      style={{
+                        marginLeft: "10px",
+                        padding: "10px 18px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        background: "#ffffff",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setEditingProfile(true)}
+                    style={{
+                      padding: "10px 18px",
+                      border: "none",
+                      borderRadius: "8px",
+                      background: "#4f46e5",
+                      color: "#ffffff",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Edit Profile
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+
+  if (currentView === "applications") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#f5f7fb",
+          fontFamily: "Inter, Arial, sans-serif",
+          padding: "40px",
+        }}
+      >
+        <button
+          onClick={() => setCurrentView("dashboard")}
+          style={{
+            padding: "10px 18px",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            background: "#ffffff",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        <h1
+          style={{
+            marginTop: "30px",
+            color: "#111827",
+          }}
+        >
+          My Applications
+        </h1>
+
+        {applicationsLoading ? (
+          <p style={{ color: "#64748b" }}>
+            Loading applications...
+          </p>
+        ) : applications.length === 0 ? (
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              background: "#ffffff",
+              borderRadius: "12px",
+              color: "#64748b",
+            }}
+          >
+            You have not applied for any jobs yet.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gap: "18px",
+              marginTop: "20px",
+            }}
+          >
+            {applications.map((application) => {
+              const job = jobs.find(
+                (item) => item.job_id === application.job_id
+              );
+
+              return (
+                <div
+                  key={application.application_id}
+                  style={{
+                    background: "#ffffff",
+                    padding: "22px",
+                    borderRadius: "14px",
+                    border: "1px solid #e5e7eb",
+                  }}
+                >
+                  <h2
+                    style={{
+                      marginTop: 0,
+                      color: "#111827",
+                    }}
+                  >
+                    {job?.title ||
+                      `Job #${application.job_id}`}
+                  </h2>
+
+                  <p style={{ color: "#64748b" }}>
+                    Application ID:{" "}
+                    {application.application_id}
+                  </p>
+
+                  <strong>
+                    Status:{" "}
+                    {application.status}
+                  </strong>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+
+  if (currentView === "jobs") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#f5f7fb",
+          padding: "40px",
+          fontFamily: "Inter, Arial, sans-serif",
+        }}
+      >
+        <button
+          onClick={() => setCurrentView("dashboard")}
+          style={{
+            padding: "10px 18px",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            background: "#ffffff",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        <h1
+          style={{
+            marginTop: "30px",
+            color: "#111827",
+          }}
+        >
+          Available Jobs
+        </h1>
+
+        {jobsLoading ? (
+          <p style={{ color: "#64748b" }}>
+            Loading jobs...
+          </p>
+        ) : jobs.length === 0 ? (
+          <p style={{ color: "#64748b" }}>
+            No jobs available right now.
+          </p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "20px",
+              marginTop: "25px",
+            }}
+          >
+            {jobs.map((job) => {
+              const alreadyApplied = applications.some(
+                (application) =>
+                  application.job_id === job.id
+              );
+
+              return (
+                <div
+                  key={job.job_id}
+                  style={{
+                    background: "#ffffff",
+                    padding: "22px",
+                    borderRadius: "14px",
+                    border: "1px solid #e5e7eb",
+                  }}
+                >
+                  <h2
+                    style={{
+                      marginTop: 0,
+                      color: "#111827",
+                    }}
+                  >
+                    {job.title}
+                  </h2>
+
+                  <p style={{ color: "#64748b" }}>
+                    {job.description ||
+                      "No job description available."}
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      applyForJob(job.id)
+                    }
+                    disabled={alreadyApplied}
+                    style={{
+                      marginTop: "10px",
+                      padding: "10px 18px",
+                      border: "none",
+                      borderRadius: "8px",
+                      background: alreadyApplied
+                        ? "#94a3b8"
+                        : "#4f46e5",
+                      color: "#ffffff",
+                      cursor: alreadyApplied
+                        ? "not-allowed"
+                        : "pointer",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {alreadyApplied
+                      ? "Already Applied"
+                      : "Apply Now"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fb",
+        fontFamily: "Inter, Arial, sans-serif",
+      }}
+    >
+      <header
+        style={{
+          background: "#ffffff",
+          borderBottom: "1px solid #e5e7eb",
+          padding: "18px 40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              color: "#111827",
+              fontSize: "24px",
+            }}
+          >
+            RecruitAI
+          </h1>
+
+          <p
+            style={{
+              margin: "4px 0 0",
+              color: "#64748b",
+              fontSize: "13px",
+            }}
+          >
+            Candidate Dashboard
+          </p>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: "10px 18px",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            background: "#ffffff",
+            color: "#374151",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          Logout
+        </button>
+      </header>
+
+      <main
+        style={{
+          padding: "35px 40px",
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+        <div style={{ marginBottom: "28px" }}>
+          <h2
+            style={{
+              margin: 0,
+              color: "#111827",
+              fontSize: "28px",
+            }}
+          >
+            Welcome, Candidate 👋
+          </h2>
+
+          <p
+            style={{
+              color: "#64748b",
+              marginTop: "8px",
+            }}
+          >
+            Manage your profile, applications and AI interview.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "20px",
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              padding: "24px",
+              borderRadius: "14px",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <h3>👤 My Profile</h3>
+
+            <p style={{ color: "#64748b" }}>
+              View and manage your candidate profile.
+            </p>
+
+            <button
+              onClick={() => setCurrentView("profile")}
+              style={{
+                padding: "9px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#4f46e5",
+                color: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              View Profile
+            </button>
+          </div>
+
+          <div
+            style={{
+              background: "#ffffff",
+              padding: "24px",
+              borderRadius: "14px",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <h3>💼 Available Jobs</h3>
+
+            <p style={{ color: "#64748b" }}>
+              Explore jobs and apply for suitable positions.
+            </p>
+
+            <button
+              onClick={() => setCurrentView("jobs")}
+              style={{
+                padding: "9px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#4f46e5",
+                color: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              Browse Jobs
+            </button>
+          </div>
+
+          <div
+            style={{
+              background: "#ffffff",
+              padding: "24px",
+              borderRadius: "14px",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <h3>📋 My Applications</h3>
+
+            <p style={{ color: "#64748b" }}>
+              Track your job applications and their status.
+            </p>
+
+            <button
+              onClick={() =>
+                setCurrentView("applications")
+              }
+              style={{
+                padding: "9px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#4f46e5",
+                color: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              View Applications
+            </button>
+          </div>
+
+          <div
+            style={{
+              background: "#ffffff",
+              padding: "24px",
+              borderRadius: "14px",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <h3>🎤 AI Interview</h3>
+
+            <p style={{ color: "#64748b" }}>
+              Take your technical AI-powered interview.
+            </p>
+
+            <button
+              onClick={() =>
+                setCurrentView("interview")
+              }
+              style={{
+                padding: "9px 16px",
+                border: "none",
+                borderRadius: "8px",
+                background: "#4f46e5",
+                color: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              Start Interview
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "28px",
+            background: "#ffffff",
+            padding: "24px",
+            borderRadius: "14px",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h2
+            style={{
+              marginTop: 0,
+              color: "#111827",
+            }}
+          >
+            Application Status
+          </h2>
+
+          <p style={{ color: "#64748b" }}>
+            Your recent applications and interview status
+            will appear here.
+          </p>
+
+          {applications.length === 0 ? (
+            <div
+              style={{
+                padding: "16px",
+                background: "#f8fafc",
+                borderRadius: "10px",
+                color: "#64748b",
+              }}
+            >
+              No applications yet.
+            </div>
+          ) : (
+            applications.slice(0, 3).map((application) => {
+              const job = jobs.find(
+                (item) => item.id === application.job_id
+              );
+
+              return (
+                <div
+                  key={application.application_id}
+                  style={{
+                    padding: "14px",
+                    background: "#f8fafc",
+                    borderRadius: "10px",
+                    marginTop: "10px",
+                  }}
+                >
+                  <strong>
+                    {job?.title ||
+                      `Job #${application.job_id}`}
+                  </strong>
+
+                  <div
+                    style={{
+                      marginTop: "5px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Status: {application.status}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
 
   // =========================================================
   // DASHBOARD UI
@@ -4755,6 +5850,198 @@ try {
 
           </section>
 
+        )}
+
+                {/* JOB APPLICATIONS */}
+
+        {userRole === "recruiter" && (
+          <section
+            className="recruitment-overview"
+            style={{ marginTop: "24px" }}
+          >
+            <div className="section-header">
+              <div>
+                <h2>Job Applications</h2>
+                <p>
+                  Review applications submitted by candidates for your jobs.
+                </p>
+              </div>
+
+              <button
+                className="refresh-button"
+                onClick={() => window.location.reload()}
+                disabled={applicationsLoading}
+              >
+                {applicationsLoading ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+
+            {applicationsLoading ? (
+              <div className="dashboard-message">
+                Loading applications...
+              </div>
+            ) : applications.length === 0 ? (
+              <div className="dashboard-message">
+                No applications received yet.
+              </div>
+            ) : (
+              <div
+                style={{
+                  overflowX: "auto",
+                  marginTop: "20px",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                        }}
+                      >
+                        Application ID
+                      </th>
+
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                        }}
+                      >
+                        Candidate ID
+                      </th>
+
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                        }}
+                      >
+                        Job ID
+                      </th>
+
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                        }}
+                      >
+                        Status
+                      </th>
+
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                        }}
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {applications.map((application) => (
+                      <tr key={application.application_id}>
+                        <td style={{ padding: "12px" }}>
+                          #{application.application_id}
+                        </td>
+
+                        <td style={{ padding: "12px" }}>
+                          #{application.candidate_id}
+                        </td>
+
+                        <td style={{ padding: "12px" }}>
+                          #{application.job_id}
+                        </td>
+
+                        <td style={{ padding: "12px" }}>
+                          <span
+                            className="status-badge success"
+                          >
+                            {application.status}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: "12px" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <button
+                              onClick={() =>
+                                updateApplicationStatus(
+                                  application.application_id,
+                                  "shortlisted"
+                                )
+                              }
+                              style={{
+                                padding: "8px 12px",
+                                border: "none",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                background: "#e0f2fe",
+                                color: "#0369a1",
+                              }}
+                            >
+                              Shortlist
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                updateApplicationStatus(
+                                  application.application_id,
+                                  "rejected"
+                                )
+                              }
+                              style={{
+                                padding: "8px 12px",
+                                border: "none",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                background: "#fee2e2",
+                                color: "#b91c1c",
+                              }}
+                            >
+                              Reject
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                updateApplicationStatus(
+                                  application.application_id,
+                                  "selected"
+                                )
+                              }
+                              style={{
+                                padding: "8px 12px",
+                                border: "none",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                background: "#dcfce7",
+                                color: "#15803d",
+                              }}
+                            >
+                              Select
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         )}
 
       </main>

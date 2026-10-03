@@ -10,3 +10,4 @@ class InterviewQuestion(Base):
     question = Column(Text, nullable=False)
     question_type = Column(String, nullable=False, default="technical")
     difficulty = Column(String, nullable=False, default="medium")
+    expected_answer = Column(Text, nullable=True)

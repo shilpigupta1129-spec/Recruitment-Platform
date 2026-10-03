@@ -5,6 +5,10 @@ function Interview() {
   // STAGE 1 STATES
   // =========================
   const [started, setStarted] = useState(false);
+  const [customQuestion, setCustomQuestion] = useState("");
+  const [expectedAnswer, setExpectedAnswer] = useState("");
+  const [customQuestions, setCustomQuestions] = useState([]);
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [videoQuestions, setVideoQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -714,9 +718,169 @@ setFinalScorecard(scorecardData);
     };
   }, []);
 
+    // =========================
+  // LOAD SAVED CUSTOM QUESTIONS
+  // =========================
+  useEffect(() => {
+    const loadCustomQuestions = async () => {
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/interviews/${interviewId}/questions`
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to load saved questions.");
+        }
+
+        const data = await response.json();
+
+        setCustomQuestions(data);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    if (interviewId) {
+      loadCustomQuestions();
+    }
+  }, [interviewId]);
+
+  const deleteExpectedAnswer = async (questionId) => {
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/interviews/${interviewId}/questions/${questionId}/expected-answer`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to delete expected answer.");
+    }
+
+    setCustomQuestions((prev) =>
+      prev.map((item) =>
+        item.question_id === questionId
+          ? { ...item, expected_answer: null }
+          : item
+      )
+    );
+
+    if (editingQuestionId === questionId) {
+      setExpectedAnswer("");
+    }
+  } catch (err) {
+    setError(err.message);
+  }
+};
+
+const deleteQuestion = async (questionId) => {
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/interviews/${interviewId}/questions/${questionId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to delete question.");
+    }
+
+    setCustomQuestions((prev) =>
+      prev.filter((item) => item.question_id !== questionId)
+    );
+
+    if (editingQuestionId === questionId) {
+      setEditingQuestionId(null);
+      setCustomQuestion("");
+      setExpectedAnswer("");
+    }
+  } catch (err) {
+    setError(err.message);
+  }
+};
+
   // ============================================================
   // STAGE 1 - START INTERVIEW
   // ============================================================
+  const addCustomQuestion = async () => {
+  if (!customQuestion.trim()) {
+    return;
+  }
+
+  if (!expectedAnswer.trim()) {
+    return;
+  }
+
+  try {
+    // UPDATE EXISTING QUESTION
+    if (editingQuestionId) {
+      const response = await fetch(
+        `http://127.0.0.1:8000/interviews/${interviewId}/questions/${editingQuestionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: customQuestion.trim(),
+            expected_answer: expectedAnswer.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to update question.");
+      }
+
+      const data = await response.json();
+
+      setCustomQuestions((prev) =>
+        prev.map((item) =>
+          item.question_id === editingQuestionId
+            ? data
+            : item
+        )
+      );
+
+      setEditingQuestionId(null);
+      setCustomQuestion("");
+      setExpectedAnswer("");
+
+      return;
+    }
+
+    // ADD NEW QUESTION
+    const response = await fetch(
+      `http://127.0.0.1:8000/interviews/${interviewId}/questions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: customQuestion.trim(),
+          expected_answer: expectedAnswer.trim(),
+          question_type: "technical",
+          difficulty: "medium",
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Unable to add custom question.");
+    }
+
+    const data = await response.json();
+
+    setCustomQuestions((prev) => [...prev, data]);
+    setCustomQuestion("");
+    setExpectedAnswer("");
+  } catch (err) {
+    setError(err.message);
+  }
+};
   const startInterview = async () => {
     try {
       await fetch(
@@ -749,9 +913,8 @@ setFinalScorecard(scorecardData);
 
       const questionList = allQuestions.filter(
         (item) =>
-          [8, 9, 10, 11, 12].includes(
-            item.question_id
-          )
+          item.question_type === "technical" &&
+          item.question_id !== 7
       );
 
       if (questionList.length === 0) {
@@ -1976,6 +2139,157 @@ setFinalScorecard(scorecardData);
 
         {/* BEFORE INTERVIEW START */}
         {!started ? (
+          <>
+          <div
+          style={{
+            background: "#ffffff",
+            padding: "20px",
+            borderRadius: "10px",
+            marginBottom: "25px",
+            border: "1px solid #e5e7eb",
+            }}
+            >
+  <h3 style={{ marginTop: 0 }}>
+    Add Your Own Interview Question
+  </h3>
+
+  <textarea
+    value={customQuestion}
+    onChange={(e) => setCustomQuestion(e.target.value)}
+    placeholder="Enter your own technical question..."
+    rows={3}
+    style={{
+      width: "100%",
+      padding: "12px",
+      border: "1px solid #d1d5db",
+      borderRadius: "8px",
+      fontSize: "15px",
+      boxSizing: "border-box",
+      resize: "vertical",
+    }}
+  />
+<textarea
+  value={expectedAnswer}
+  onChange={(e) => setExpectedAnswer(e.target.value)}
+  placeholder="Enter the expected/correct answer..."
+  rows={4}
+  style={{
+    width: "100%",
+    padding: "12px",
+    marginTop: "10px",
+    border: "1px solid #d1d5db",
+    borderRadius: "8px",
+    fontSize: "15px",
+    boxSizing: "border-box",
+    resize: "vertical",
+  }}
+/>
+  <button
+    onClick={addCustomQuestion}
+    style={{
+      marginTop: "10px",
+      padding: "10px 18px",
+      border: "none",
+      borderRadius: "8px",
+      background: "#2563eb",
+      color: "#fff",
+      fontSize: "15px",
+      cursor: "pointer",
+    }}
+  >
+    {editingQuestionId ? "Update Question" : "Add Question"}
+  </button>
+
+  {customQuestions.length > 0 && (
+    <div style={{ marginTop: "15px" }}>
+      <strong>Added Questions:</strong>
+
+      {customQuestions.map((item, index) => (
+  <div
+    key={item.question_id || index}
+    style={{
+      marginTop: "8px",
+      padding: "12px",
+      background: "#f8fafc",
+      borderRadius: "6px",
+    }}
+  >
+    <div>
+      <strong>
+        {index + 1}. {item.question}
+      </strong>
+    </div>
+
+    {item.expected_answer && (
+      <div
+        style={{
+          marginTop: "8px",
+          color: "#475569",
+          fontSize: "14px",
+        }}
+      >
+        <strong>Expected Answer:</strong>{" "}
+        {item.expected_answer}
+      </div>
+    )}
+
+    <button
+      onClick={() => {
+        setEditingQuestionId(item.question_id);
+        setCustomQuestion(item.question);
+        setExpectedAnswer(item.expected_answer || "");
+      }}
+      style={{
+        marginTop: "10px",
+        padding: "8px 14px",
+        border: "none",
+        borderRadius: "6px",
+        background: "#f59e0b",
+        color: "#fff",
+        cursor: "pointer",
+      }}
+    >
+      Edit
+    </button>
+
+    {item.expected_answer && (
+      <button
+        onClick={() => deleteExpectedAnswer(item.question_id)}
+        style={{
+          marginTop: "10px",
+          marginLeft: "8px",
+          padding: "8px 14px",
+          border: "none",
+          borderRadius: "6px",
+          background: "#dc2626",
+          color: "#fff",
+          cursor: "pointer",
+        }}
+      >
+        Delete Expected Answer
+      </button>
+    )}
+
+    <button
+      onClick={() => deleteQuestion(item.question_id)}
+      style={{
+        marginTop: "10px",
+        marginLeft: "8px",
+        padding: "8px 14px",
+        border: "none",
+        borderRadius: "6px",
+        background: "#991b1b",
+        color: "#fff",
+        cursor: "pointer",
+      }}
+    >
+      Delete Question
+    </button>
+  </div>
+))}
+</div>
+  )}
+  </div>
           <div>
             <div
               style={{
@@ -2033,6 +2347,7 @@ setFinalScorecard(scorecardData);
                 : "Start Interview"}
             </button>
           </div>
+          </>
         ) : currentQuestion ? (
           // =====================================================
           // CURRENT TECHNICAL QUESTION
