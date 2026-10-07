@@ -117,6 +117,65 @@ in relation to the given question.
             "The answer is incorrect or irrelevant to the question."
         )
 
+                # -----------------------------------------
+        # EXPECTED ANSWER BASED EVALUATION
+        # -----------------------------------------
+
+        expected_answer = (
+            question.expected_answer or ""
+        ).strip().lower()
+
+        if expected_answer:
+            expected_keywords = {
+                word
+                for word in expected_answer.split()
+                if len(word) > 3
+            }
+
+            matched_keywords = sum(
+                1
+                for word in expected_keywords
+                if word in answer_text
+            )
+
+            if matched_keywords >= max(
+                2,
+                len(expected_keywords) // 2
+            ):
+                score = 10
+                feedback = (
+                    "The answer correctly addresses the question "
+                    "and matches the expected answer."
+                )
+
+            elif matched_keywords >= 1:
+                score = 6
+                feedback = (
+                    "The answer is partially correct but does not "
+                    "fully match the expected answer."
+                )
+
+            else:
+                score = 0
+                feedback = (
+                    "The answer does not match the expected answer "
+                    "for this question."
+                )
+
+            answer.score = score
+            answer.feedback = feedback
+
+            db.commit()
+            db.refresh(answer)
+
+            return {
+                "answer_id": answer.id,
+                "question_id": answer.question_id,
+                "score": answer.score,
+                "feedback": answer.feedback,
+                "source": "Expected Answer Fallback Evaluation"
+            }
+
         # -----------------------------------------
         # Q1: Largest number in a list
         # -----------------------------------------

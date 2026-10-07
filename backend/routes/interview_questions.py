@@ -19,6 +19,7 @@ class QuestionUpdate(BaseModel):
     question_type: str | None = None
     difficulty: str | None = None
     expected_answer: str | None = None
+    is_technical_question: int | None = None
 
 @router.post("/{interview_id}/questions")
 def create_question(
@@ -41,7 +42,9 @@ def create_question(
         question=data.question,
         question_type=data.question_type,
         difficulty=data.difficulty,
-        expected_answer=data.expected_answer
+        expected_answer=data.expected_answer,
+        is_video_question=0,
+        is_technical_question=0
     )
     
     db.add(new_question)
@@ -55,7 +58,9 @@ def create_question(
         "question": new_question.question,
         "question_type": new_question.question_type,
         "difficulty": new_question.difficulty,
-        "expected_answer": new_question.expected_answer
+        "expected_answer": new_question.expected_answer,
+        "is_video_question": new_question.is_video_question,
+        "is_technical_question": new_question.is_technical_question
     }
 
 @router.get("/{interview_id}/questions")
@@ -84,7 +89,9 @@ def get_questions(
             "question": q.question,
             "question_type": q.question_type,
             "difficulty": q.difficulty,
-            "expected_answer": q.expected_answer
+            "expected_answer": q.expected_answer,
+            "is_video_question": q.is_video_question,
+            "is_technical_question": q.is_technical_question
         }
         for q in questions
     ]
@@ -119,6 +126,9 @@ def update_question(
     if data.expected_answer is not None:
         question.expected_answer = data.expected_answer
 
+    if data.is_technical_question is not None:
+        question.is_technical_question = data.is_technical_question
+
     db.commit()
     db.refresh(question)
 
@@ -129,7 +139,39 @@ def update_question(
         "question": question.question,
         "question_type": question.question_type,
         "difficulty": question.difficulty,
-        "expected_answer": question.expected_answer
+        "expected_answer": question.expected_answer,
+        "is_video_question": question.is_video_question,
+        "is_technical_question": question.is_technical_question
+    }
+
+@router.put("/{interview_id}/questions/{question_id}/video")
+def toggle_video_question(
+    interview_id: int,
+    question_id: int,
+    db: Session = Depends(get_db)
+):
+    question = db.query(InterviewQuestion).filter(
+        InterviewQuestion.id == question_id,
+        InterviewQuestion.interview_id == interview_id
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    question.is_video_question = (
+        0 if question.is_video_question == 1 else 1
+    )
+
+    db.commit()
+    db.refresh(question)
+
+    return {
+        "message": "Video interview selection updated successfully",
+        "question_id": question.id,
+        "is_video_question": question.is_video_question
     }
 
 @router.delete("/{interview_id}/questions/{question_id}/expected-answer")
@@ -159,6 +201,36 @@ def delete_expected_answer(
         "message": "Expected answer deleted successfully",
         "question_id": question.id,
         "expected_answer": question.expected_answer
+    }
+
+@router.put("/{interview_id}/questions/{question_id}/technical")
+def toggle_technical_question(
+    interview_id: int,
+    question_id: int,
+    db: Session = Depends(get_db)
+):
+    question = db.query(InterviewQuestion).filter(
+        InterviewQuestion.id == question_id,
+        InterviewQuestion.interview_id == interview_id
+    ).first()
+
+    if not question:
+        raise HTTPException(
+            status_code=404,
+            detail="Question not found"
+        )
+
+    question.is_technical_question = (
+        0 if question.is_technical_question == 1 else 1
+    )
+
+    db.commit()
+    db.refresh(question)
+
+    return {
+        "message": "Technical interview selection updated successfully",
+        "question_id": question.id,
+        "is_technical_question": question.is_technical_question
     }
 
 @router.delete("/{interview_id}/questions/{question_id}")

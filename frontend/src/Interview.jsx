@@ -89,22 +89,24 @@ function Interview() {
         throw new Error("No video interview questions found.");
       }
 
+      const selectedVideoQuestions = questionList.filter(
+  (item) => item.is_video_question === 1
+);
+
+if (selectedVideoQuestions.length === 0) {
+  throw new Error("No questions selected for video interview.");
+}
+
       // Save database questions for Stage 2
-      setVideoQuestions(questionList);
-      videoQuestionsRef.current = questionList;
+      setVideoQuestions(selectedVideoQuestions);
+      videoQuestionsRef.current = selectedVideoQuestions;
 
-      // Stage 2 starts with Introduction - Question ID 7
-      const introductionQuestion = questionList.find(
-        (item) => item.question_id === 7
-      );
+      // Stage 2 starts with the first available recruiter question
+const firstQuestion = selectedVideoQuestions[0];
 
-      if (!introductionQuestion) {
-        throw new Error("Introduction question not found.");
-      }
-
-      setVideoQuestion(introductionQuestion.question);
-      setVideoQuestionId(introductionQuestion.question_id);
-      setVideoQuestionIndex(0);
+setVideoQuestion(firstQuestion.question);
+setVideoQuestionId(firstQuestion.question_id);
+setVideoQuestionIndex(0);
 
       // Start camera and microphone
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -119,11 +121,11 @@ function Interview() {
         await videoRef.current.play();
       }
 
-      // AI asks Introduction question
+      // AI asks first selected video question
       speakQuestion(
-        introductionQuestion.question,
+        videoQuestionsRef.current[0].question,
         true,
-        introductionQuestion.question_id
+        videoQuestionsRef.current[0].question_id
       );
     } catch (err) {
       console.error(err);
@@ -432,231 +434,131 @@ function Interview() {
 
         setVideoEvaluations(updatedEvaluations);
 
-        // -----------------------------
-        // GENERATE NEXT QUESTION
-        // -----------------------------
+        // -----------------------------------------
+// COMPLETE INTERVIEW IF THIS IS THE LAST
+// SELECTED VIDEO QUESTION
+// -----------------------------------------
 
-        const nextQuestionResponse = await fetch(
-          "http://127.0.0.1:8000/ai/generate-next-question?answer=" +
-            encodeURIComponent(finalAnswer) +
-            "&current_question=" +
-            encodeURIComponent(questionText),
-          {
-            method: "POST",
-          }
-        );
+const recruiterVideoQuestions =
+  videoQuestionsRef.current;
 
-        if (!nextQuestionResponse.ok) {
-          throw new Error(
-            "Unable to generate next question."
-          );
-        }
-
-        const nextQuestionData =
-          await nextQuestionResponse.json();
-
-        // -----------------------------
-        // INTERVIEW COMPLETED
-        // -----------------------------
-
-        if (nextQuestionData.interview_completed) {
-          try {
-            const scorecardResponse = await fetch(
-              "http://127.0.0.1:8000/ai/generate-final-scorecard?evaluations=" +
-                encodeURIComponent(
-                  JSON.stringify(
-                    updatedEvaluations.map(
-                      (item) => ({
-                        question:
-                          typeof item.question ===
-                          "string"
-                            ? item.question
-                            : "",
-                        answer:
-                          typeof item.answer ===
-                          "string"
-                            ? item.answer
-                            : "",
-                        score:
-                          typeof item.score ===
-                          "number"
-                            ? item.score
-                            : 0,
-                        feedback:
-                          typeof item.feedback ===
-                          "string"
-                            ? item.feedback
-                            : "",
-                      })
-                    )
-                  )
-                ),
-              {
-                method: "POST",
-              }
-            );
-
-            if (!scorecardResponse.ok) {
-              throw new Error(
-                "Unable to generate final scorecard."
-              );
-            }
-
-            const scorecardData =
-  await scorecardResponse.json();
-
-/*
-  Get the real candidate_id from the backend interview.
-  We do NOT hardcode candidate_id because interview IDs
-  and candidate IDs can change.
-*/
-let actualCandidateId = null;
-
-try {
-  const interviewInfoResponse = await fetch(
-    `http://127.0.0.1:8000/interviews/${interviewId}/scorecard`
+const currentVideoQuestionIndex =
+  recruiterVideoQuestions.findIndex(
+    (item) =>
+      item.question.trim().toLowerCase() ===
+      questionText.trim().toLowerCase()
   );
 
-  if (interviewInfoResponse.ok) {
-    const interviewInfo =
-      await interviewInfoResponse.json();
+if (
+  currentVideoQuestionIndex ===
+  recruiterVideoQuestions.length - 1
+) {
+  try {
+    const scorecardResponse = await fetch(
+      "http://127.0.0.1:8000/ai/generate-final-scorecard?evaluations=" +
+        encodeURIComponent(
+          JSON.stringify(
+            updatedEvaluations.map(
+              (item) => ({
+                question:
+                  typeof item.question ===
+                  "string"
+                    ? item.question
+                    : "",
+                answer:
+                  typeof item.answer ===
+                  "string"
+                    ? item.answer
+                    : "",
+                score:
+                  typeof item.score ===
+                  "number"
+                    ? item.score
+                    : 0,
+                feedback:
+                  typeof item.feedback ===
+                  "string"
+                    ? item.feedback
+                    : "",
+              })
+            )
+          )
+        ),
+      {
+        method: "POST",
+      }
+    );
 
-    actualCandidateId =
-      interviewInfo?.candidate_id ?? null;
+    if (!scorecardResponse.ok) {
+      throw new Error(
+        "Unable to generate final scorecard."
+      );
+    }
+
+    const scorecardData =
+      await scorecardResponse.json();
+
+    setFinalScorecard(scorecardData);
+
+    setVideoInterviewCompleted(true);
+    return;
+  } catch (scorecardError) {
+    console.error(
+      "Scorecard error:",
+      scorecardError
+    );
+
+    setError(
+      "Interview completed, but final scorecard could not be generated."
+    );
+
+    setVideoInterviewCompleted(true);
+    return;
   }
-} catch (candidateIdError) {
-  console.error(
-    "Unable to get interview candidate ID:",
-    candidateIdError
-  );
 }
 
-const scorecardToSave = {
-  ...scorecardData,
-  candidate_id: actualCandidateId,
-  interview_id: interviewId,
-};
+// -----------------------------
+// NEXT RECRUITER-SELECTED QUESTION
+// -----------------------------
 
-/*
-  Save using the actual candidate ID.
-  This prevents one candidate's scorecard from
-  appearing in another candidate's profile.
-*/
-if (actualCandidateId !== null) {
-  localStorage.setItem(
-    `latestInterviewScorecard_${actualCandidateId}`,
-    JSON.stringify(scorecardToSave)
+// -----------------------------
+// NEXT RECRUITER-SELECTED QUESTION
+// -----------------------------
+
+const nextIndex =
+  currentVideoQuestionIndex + 1;
+
+if (
+  nextIndex <
+  recruiterVideoQuestions.length
+) {
+  const nextQuestion =
+    recruiterVideoQuestions[nextIndex];
+
+  setVideoQuestion(
+    nextQuestion.question
   );
+
+  setVideoQuestionId(
+    nextQuestion.question_id
+  );
+
+  setVideoQuestionIndex(nextIndex);
+
+  setTranscript("");
+  setAiResult(null);
+
+  speakQuestion(
+    nextQuestion.question,
+    true,
+    nextQuestion.question_id
+  );
+
+  return;
 }
 
-/*
-  Keep the legacy key too, but with the real candidate ID.
-  App.jsx will only use this if the candidate ID matches.
-*/
-localStorage.setItem(
-  "latestInterviewScorecard",
-  JSON.stringify(scorecardToSave)
-);
-
-setFinalScorecard(scorecardData);
-          } catch (scorecardError) {
-            console.error(
-              "Scorecard error:",
-              scorecardError
-            );
-
-            setError(
-              "Interview completed, but final scorecard could not be generated."
-            );
-          }
-
-          setVideoInterviewCompleted(true);
-          return;
-        }
-
-        // -----------------------------
-        // NEXT QUESTION
-        // -----------------------------
-
-        if (nextQuestionData.next_question) {
-          const nextQuestion =
-            nextQuestionData.next_question;
-
-          // Find matching question in database
-          const matchingQuestion =
-            videoQuestionsRef.current.find((item) => {
-              const dbQuestion =
-                item.question.toLowerCase().trim();
-
-              const nextQuestionText =
-                nextQuestion.toLowerCase().trim();
-
-              return (
-                dbQuestion === nextQuestionText ||
-                (dbQuestion.includes("list") &&
-                  dbQuestion.includes("tuple") &&
-                  nextQuestionText.includes("list") &&
-                  nextQuestionText.includes("tuple")) ||
-                (dbQuestion.includes("fastapi") &&
-                  nextQuestionText.includes("fastapi")) ||
-                (dbQuestion.includes("primary key") &&
-                  dbQuestion.includes("foreign key") &&
-                  nextQuestionText.includes("primary key") &&
-                  nextQuestionText.includes("foreign key")) ||
-                (dbQuestion.includes("let") &&
-                  dbQuestion.includes("const") &&
-                  dbQuestion.includes("var") &&
-                  nextQuestionText.includes("let") &&
-                  nextQuestionText.includes("const") &&
-                  nextQuestionText.includes("var")) ||
-                (dbQuestion.includes("technical project") &&
-                  nextQuestionText.includes("technical project")) ||
-                (dbQuestion.includes("introduce yourself") &&
-                  nextQuestionText.includes("introduce yourself"))
-              );
-            });
-
-          console.log(
-            "NEXT QUESTION FROM BACKEND:",
-            nextQuestion
-          );
-
-          console.log(
-            "QUESTIONS LOADED IN FRONTEND:",
-            videoQuestions
-          );
-
-          console.log(
-            "MATCHING QUESTION:",
-            matchingQuestion
-          );
-
-          if (!matchingQuestion) {
-            throw new Error(
-              "Next interview question was not found in the database."
-            );
-          }
-
-          setVideoQuestion(nextQuestion);
-
-          setVideoQuestionId(
-            matchingQuestion.question_id
-          );
-
-          setVideoQuestionIndex(
-            (previousIndex) =>
-              previousIndex + 1
-          );
-
-          setTranscript("");
-          setAiResult(null);
-
-          speakQuestion(
-            nextQuestion,
-            true,
-            matchingQuestion.question_id
-          );
-        }
+setVideoInterviewCompleted(true);
+return;
       } catch (err) {
         console.error(err);
 
@@ -914,7 +816,7 @@ const deleteQuestion = async (questionId) => {
       const questionList = allQuestions.filter(
         (item) =>
           item.question_type === "technical" &&
-          item.question_id !== 7
+          item.is_technical_question === 1
       );
 
       if (questionList.length === 0) {
@@ -1571,7 +1473,7 @@ const deleteQuestion = async (questionId) => {
               <span>
                 Question{" "}
                 {videoQuestionIndex + 1}{" "}
-                of 6
+                of {videoQuestions.length}
               </span>
             </div>
 
@@ -2285,6 +2187,101 @@ const deleteQuestion = async (questionId) => {
     >
       Delete Question
     </button>
+    <button
+  onClick={async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/interviews/${interviewId}/questions/${item.question_id}/video`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to update video interview selection.");
+      }
+
+      const data = await response.json();
+
+      setCustomQuestions((prev) =>
+        prev.map((question) =>
+          question.question_id === item.question_id
+            ? {
+                ...question,
+                is_video_question: data.is_video_question,
+              }
+            : question
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  }}
+  style={{
+    marginTop: "10px",
+    marginLeft: "8px",
+    padding: "8px 14px",
+    border: "none",
+    borderRadius: "6px",
+    background: item.is_video_question ? "#16a34a" : "#2563eb",
+    color: "#fff",
+    cursor: "pointer",
+  }}
+>
+  {item.is_video_question
+    ? "Remove from Video Interview"
+    : "Use in Video Interview"}
+</button>
+<button
+  onClick={async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/interviews/${interviewId}/questions/${item.question_id}/technical`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Unable to update technical interview selection."
+        );
+      }
+
+      const data = await response.json();
+
+      setCustomQuestions((prev) =>
+        prev.map((question) =>
+          question.question_id === item.question_id
+            ? {
+                ...question,
+                is_technical_question:
+                  data.is_technical_question,
+              }
+            : question
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  }}
+  style={{
+    marginTop: "10px",
+    marginLeft: "8px",
+    padding: "8px 14px",
+    border: "none",
+    borderRadius: "6px",
+    background: item.is_technical_question
+      ? "#16a34a"
+      : "#7c3aed",
+    color: "#fff",
+    cursor: "pointer",
+  }}
+>
+  {item.is_technical_question
+    ? "Remove from Technical Interview"
+    : "Use in Technical Interview"}
+</button>
   </div>
 ))}
 </div>

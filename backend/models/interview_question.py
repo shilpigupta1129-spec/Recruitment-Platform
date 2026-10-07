@@ -11,3 +11,5 @@ class InterviewQuestion(Base):
     question_type = Column(String, nullable=False, default="technical")
     difficulty = Column(String, nullable=False, default="medium")
     expected_answer = Column(Text, nullable=True)
+    is_video_question = Column(Integer, nullable=False, default=0)
+    is_technical_question = Column(Integer, nullable=False, default=0)
