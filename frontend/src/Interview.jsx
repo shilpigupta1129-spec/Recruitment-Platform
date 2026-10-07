@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-function Interview() {
+function Interview({ userRole }) {
   // =========================
   // STAGE 1 STATES
   // =========================
@@ -2042,6 +2042,7 @@ const deleteQuestion = async (questionId) => {
         {/* BEFORE INTERVIEW START */}
         {!started ? (
           <>
+          {userRole === "recruiter" && (
           <div
           style={{
             background: "#ffffff",
@@ -2287,6 +2288,7 @@ const deleteQuestion = async (questionId) => {
 </div>
   )}
   </div>
+          )}
           <div>
             <div
               style={{

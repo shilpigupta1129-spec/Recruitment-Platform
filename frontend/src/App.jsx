@@ -12,6 +12,7 @@ import "./App.css";
 import Interview from "./Interview";
 
 function App() {
+  const userRole = localStorage.getItem("userRole");
   // =========================================================
   // RECRUITER LOGIN
   // =========================================================
@@ -2603,12 +2604,12 @@ try {
           </strong>
         </div>
 
-        <Interview />
+        <Interview userRole={userRole} />
       </div>
     );
   }
 
-  const userRole = localStorage.getItem("userRole");
+  <Interview userRole={userRole} />
 
   if (currentView === "jobs") {
   return (
