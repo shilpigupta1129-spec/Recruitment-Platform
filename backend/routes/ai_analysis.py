@@ -7,6 +7,8 @@ from openai import OpenAI
 from backend.database import get_db
 from backend.models.interview_answer import InterviewAnswer
 from backend.models.interview_question import InterviewQuestion
+from backend.models.video_interview_scorecard import VideoInterviewScorecard
+import json
 
 
 router = APIRouter(
@@ -360,7 +362,11 @@ in relation to the given question.
         }
 
 @router.post("/analyze-video-answer")
-def analyze_video_answer(question: str, answer: str):
+def analyze_video_answer(
+    question: str,
+    answer: str,
+    expected_answer: str = ""
+):
     answer_text = answer.strip()
 
     if not answer_text:
@@ -369,6 +375,47 @@ def analyze_video_answer(question: str, answer: str):
             detail="Answer cannot be empty."
         )
 
+    expected_text = expected_answer.strip().lower()
+
+    if expected_text:
+        import re
+
+        stop_words = {
+            "the", "is", "are", "was", "were", "a", "an", "and",
+            "or", "of", "to", "in", "for", "with", "that", "this",
+            "it", "as", "by", "be", "on", "can", "which"
+        }
+
+        expected_words = {
+            word for word in re.findall(
+                r"\b[a-zA-Z0-9+#.]+\b", expected_text
+            )
+            if len(word) > 2 and word not in stop_words
+        }
+
+        answer_words = set(
+            re.findall(
+                r"\b[a-zA-Z0-9+#.]+\b", answer_text.lower()
+            )
+        )
+
+        if expected_words:
+            matched_words = expected_words & answer_words
+            match_ratio = len(matched_words) / len(expected_words)
+            score = round(match_ratio * 10)
+            score = max(0, min(10, score))
+
+            feedback = (
+                f"Matched {len(matched_words)} of {len(expected_words)} "
+                f"key terms from the expected answer. "
+                f"Score: {score}/10."
+            )
+
+            return {
+                "score": score,
+                "feedback": feedback,
+                "source": "Expected Answer Evaluation"
+            }
     question_lower = question.lower()
     answer_lower = answer_text.lower()
 
@@ -553,6 +600,37 @@ def analyze_video_answer(question: str, answer: str):
                 "The answer does not clearly explain the differences "
                 "between let, const and var."
             )
+
+    
+    # -----------------------------------------
+    # Python List Question
+    # -----------------------------------------
+
+    elif "list" in question_lower and "python" in question_lower and "tuple" not in question_lower:
+
+        if "mutable" in answer_lower and (
+            "change" in answer_lower or "modify" in answer_lower
+        ):
+            score = 9
+            feedback = (
+                "The answer correctly explains that Python lists are mutable "
+                "and their elements can be changed after creation."
+            )
+
+        elif "mutable" in answer_lower:
+            score = 7
+            feedback = (
+                "The answer identifies that Python lists are mutable, "
+                "but could explain this with more detail or an example."
+            )
+
+        else:
+            score = 4
+            feedback = (
+                "The answer should explain that Python lists are mutable "
+                "and their elements can be changed after creation."
+            )
+
 
     # -----------------------------------------
     # Technical Project Question
@@ -1039,3 +1117,64 @@ def generate_final_scorecard(evaluations: str):
             status_code=400,
             detail="Invalid evaluation data."
         )
+
+# ---------------------------------------------------------
+# SAVE VIDEO INTERVIEW SCORECARD
+# ---------------------------------------------------------
+@router.post("/save-video-scorecard")
+def save_video_scorecard(
+    candidate_email: str,
+    scorecard: dict,
+    db: Session = Depends(get_db),
+):
+    if not candidate_email.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Candidate email is required",
+        )
+
+    record = (
+        db.query(VideoInterviewScorecard)
+        .filter(
+            VideoInterviewScorecard.candidate_email == candidate_email
+        )
+        .first()
+    )
+
+    if record:
+        record.scorecard_json = json.dumps(scorecard)
+    else:
+        record = VideoInterviewScorecard(
+            candidate_email=candidate_email,
+            scorecard_json=json.dumps(scorecard),
+        )
+        db.add(record)
+
+    db.commit()
+
+    return {"message": "Video interview scorecard saved successfully"}
+
+
+# ---------------------------------------------------------
+# GET VIDEO INTERVIEW SCORECARD
+# ---------------------------------------------------------
+@router.get("/video-scorecard")
+def get_video_scorecard(
+    candidate_email: str,
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(VideoInterviewScorecard)
+        .filter(
+            VideoInterviewScorecard.candidate_email == candidate_email
+        )
+        .first()
+    )
+
+    if not record:
+        raise HTTPException(
+            status_code=404,
+            detail="Video interview scorecard not found",
+        )
+
+    return json.loads(record.scorecard_json)

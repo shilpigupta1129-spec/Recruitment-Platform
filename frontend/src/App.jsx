@@ -76,6 +76,7 @@ const [profileForm, setProfileForm] = useState({
       }
 
       const data = await response.json();
+      console.log("LOGIN DATA:", data);
 
       setJobs(data);
     } catch (err) {
@@ -474,6 +475,9 @@ useEffect(() => {
       data.access_token
     );
     localStorage.setItem("userRole", data.role);
+    localStorage.setItem("userId", String(data.user_id));
+    localStorage.setItem("userEmail", data.email);
+    console.log("AUTH RESPONSE:", data);
 
     setIsLoggedIn(true);
     setLoginEmail("");
@@ -629,6 +633,8 @@ const handleGoogleLogin = async (response) => {
       data.access_token
     );
     localStorage.setItem("userRole", data.role);
+    localStorage.setItem("userId", String(data.user_id));
+    localStorage.setItem("userEmail", data.email);
 
     setIsLoggedIn(true);
     setLoginError("");
@@ -955,6 +961,7 @@ try {
     ) {
       setInterviewScorecard(scorecardData);
     }
+    
   } else {
     /*
       Backward compatibility with the old key.
@@ -989,6 +996,31 @@ try {
   setInterviewScorecard(null);
 }
 
+const candidateEmail =
+  data.candidate?.email ||
+  candidate.email ||
+  candidate.candidate_email;
+
+if (candidateEmail) {
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/ai/video-scorecard?candidate_email=" +
+        encodeURIComponent(candidateEmail)
+    );
+
+    if (response.ok) {
+      const scorecardData = await response.json();
+      setInterviewScorecard(scorecardData);
+    } else if (response.status !== 404) {
+      console.error(
+        "Could not fetch saved video scorecard:",
+        await response.text()
+      );
+    }
+  } catch (error) {
+    console.error("Backend scorecard fetch error:", error);
+  }
+}
       if (data.error) {
         throw new Error(data.error);
       }
@@ -2604,7 +2636,10 @@ try {
           </strong>
         </div>
 
-        <Interview userRole={userRole} />
+        <Interview 
+        userRole={userRole}
+        userId={localStorage.getItem("userId")}
+        />
       </div>
     );
   }
@@ -4395,6 +4430,23 @@ if (userRole === "candidate") {
                   >
                          View Resume
                   </button>
+                  jsx
+<button
+  className="view-resume-button"
+  disabled={!selectedCandidate.resume_filename}
+  onClick={() => {
+    if (!selectedCandidate.resume_filename) return;
+
+    window.open(
+      `http://127.0.0.1:8000/candidates/${selectedCandidate.id}/resume`,
+      "_blank"
+    );
+  }}
+>
+  {selectedCandidate.resume_filename
+    ? "View Resume"
+    : "Resume Not Available"}
+</button>
 
                   <button
                     className="delete-profile-button"

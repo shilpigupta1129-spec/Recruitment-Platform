@@ -7,19 +7,128 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.recruiter_candidate import RecruiterCandidate
+from backend.models.user import User
+from backend.models.candidate_profile import CandidateProfile
+from backend.models.video_interview_scorecard import VideoInterviewScorecard
 from backend.resume.parser import parse_resume
 from backend.resume.parser import extract_text_from_pdf
 from backend.semantic_matcher import calculate_similarity, extract_skill_matches
 from backend.qualification_matcher import check_qualification
 from backend.experience_matcher import check_experience
 from backend.overall_score import calculate_overall_score
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt
+
+
+router = APIRouter()
+SECRET_KEY = "recruitment-platform-secret-key"
+ALGORITHM = "HS256"
+
+security = HTTPBearer()
 
 
 router = APIRouter()
 
+SECRET_KEY = "recruitment-platform-secret-key"
+ALGORITHM = "HS256"
+
+security = HTTPBearer()
+
+
+def get_current_candidate(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        user_id = payload.get("user_id")
+        role = payload.get("role")
+
+        if user_id is None or role != "candidate":
+            raise HTTPException(
+                status_code=401,
+                detail="Valid candidate login required",
+            )
+
+        return {"user_id": int(user_id), "role": role}
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+        )
+
+
+@router.post("/candidates/sync-video-interview")
+def sync_video_interview_candidate(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_candidate),
+):
+    user = db.query(User).filter(
+        User.id == current_user["user_id"],
+        User.role == "candidate",
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Candidate account not found",
+        )
+
+    scorecard = db.query(VideoInterviewScorecard).filter(
+        VideoInterviewScorecard.candidate_email == user.email
+    ).first()
+
+    if not scorecard:
+        raise HTTPException(
+            status_code=404,
+            detail="Complete the video interview before syncing your profile",
+        )
+
+    existing = db.query(RecruiterCandidate).filter(
+        RecruiterCandidate.email == user.email
+    ).first()
+
+    if existing:
+        return {
+            "message": "Candidate already exists in recruiter dashboard",
+            "candidate_id": existing.id,
+        }
+
+    profile = db.query(CandidateProfile).filter(
+        CandidateProfile.candidate_id == user.id
+    ).first()
+
+    candidate = RecruiterCandidate(
+        name=user.name,
+        email=user.email,
+        phone=profile.phone if profile else None,
+        skills=profile.skills if profile else None,
+        education=profile.education if profile else None,
+        experience=profile.experience if profile else None,
+        resume_filename=profile.resume_filename if profile else None,
+        overall_score=None,
+        recruitment_status="Under Review",
+    )
+
+    db.add(candidate)
+    db.commit()
+    db.refresh(candidate)
+
+    return {
+        "message": "Candidate added to recruiter dashboard",
+        "candidate_id": candidate.id,
+    }
+
+
 UPLOAD_DIR = "uploads/resumes"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 
 # ---------------------------------------------------------
 # GET ALL CANDIDATES
@@ -222,43 +331,52 @@ async def upload_resume(
             job_description.lower().split()
         )
 
-        existing_candidates = db.query(RecruiterCandidate).filter(
-            RecruiterCandidate.email == resume_data.get("email")
-        ).all()
+        
+        existing_candidate = None
 
-        for existing_candidate in existing_candidates:
-            existing_jd = " ".join(
-                (existing_candidate.job_description or "").lower().split()
+        candidate_email = resume_data.get("email")
+
+        if candidate_email:
+            existing_candidate = (
+                db.query(RecruiterCandidate)
+                .filter(RecruiterCandidate.email == candidate_email)
+                .first()
             )
 
-            if existing_jd == normalized_job_description:
-                return {
-                    "message": "This candidate has already been analyzed for this job description.",
-                    "candidate_id": existing_candidate.id,
-                    "overall_score": existing_candidate.overall_score,
-                    "recruitment_status": existing_candidate.recruitment_status,
-                }
+        candidate_data = {
+            "name": resume_data.get("name") or "Unknown Candidate",
+            "email": candidate_email,
+            "phone": resume_data.get("phone"),
+            "skills": ", ".join(resume_data.get("skills", []))
+            if isinstance(resume_data.get("skills"), list)
+            else resume_data.get("skills"),
+            "education": ", ".join(resume_data.get("education", []))
+            if isinstance(resume_data.get("education"), list)
+            else resume_data.get("education"),
+            "experience": ", ".join(resume_data.get("experience", []))
+            if isinstance(resume_data.get("experience"), list)
+            else resume_data.get("experience"),
+            "extracurricular": None,
+            "resume_filename": safe_filename,
+            "job_description": job_description,
+            "semantic_score": semantic_score,
+            "skill_score": skill_score,
+            "qualification_status": qualification_result["status"],
+            "experience_status": experience_result["status"],
+            "experience_score": experience_score,
+            "overall_score": overall_score,
+            "recruitment_status": recruitment_status,
+        }
 
-        candidate = RecruiterCandidate(
-            name=resume_data.get("name") or "Unknown Candidate",
-            email=resume_data.get("email"),
-            phone=resume_data.get("phone"),
-            skills=", ".join(resume_data.get("skills", [])) if isinstance(resume_data.get("skills"), list) else resume_data.get("skills"),
-            education=", ".join(resume_data.get("education", [])) if isinstance(resume_data.get("education"), list) else resume_data.get("education"),
-            experience=", ".join(resume_data.get("experience", [])) if isinstance(resume_data.get("experience"), list) else resume_data.get("experience"),
-            extracurricular=None,
-            resume_filename=safe_filename,
-            job_description=job_description,
-            semantic_score=semantic_score,
-            skill_score=skill_score,
-            qualification_status=qualification_result["status"],
-            experience_status=experience_result["status"],
-            experience_score=experience_score,
-            overall_score=overall_score,
-            recruitment_status=recruitment_status,
-        )
+        if existing_candidate:
+            candidate = existing_candidate
 
-        db.add(candidate)
+            for field, value in candidate_data.items():
+                setattr(candidate, field, value)
+        else:
+            candidate = RecruiterCandidate(**candidate_data)
+            db.add(candidate)
+
         db.commit()
         db.refresh(candidate)
 

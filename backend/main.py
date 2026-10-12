@@ -10,6 +10,7 @@ from backend.models.interview import Interview
 from backend.models.interview_question import InterviewQuestion
 from backend.models.interview_answer import InterviewAnswer
 from backend.models.recruiter_candidate import RecruiterCandidate
+from backend.models.video_interview_scorecard import VideoInterviewScorecard
 
 from backend.routes.auth import router as auth_router
 from backend.routes.jobs import router as jobs_router

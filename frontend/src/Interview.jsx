@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-function Interview({ userRole }) {
+function Interview({ userRole, userId }) {
   // =========================
   // STAGE 1 STATES
   // =========================
@@ -111,7 +111,11 @@ setVideoQuestionIndex(0);
       // Start camera and microphone
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
 
       streamRef.current = stream;
@@ -153,6 +157,21 @@ setVideoQuestionIndex(0);
     window.speechSynthesis.cancel();
 
     const speech = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+
+    speech.voice =
+      voices.find((voice) => voice.name === "Google UK English Female") ||
+      voices.find((voice) => voice.name === "Google US English") ||
+      voices.find((voice) => voice.lang === "en-US");
+
+    console.log(
+      "Available AI voices:",
+      window.speechSynthesis.getVoices().map((voice) => ({
+        name: voice.name,
+        lang: voice.lang,
+        default: voice.default,
+      }))
+    );
 
     speech.rate = 0.9;
     speech.pitch = 1;
@@ -208,6 +227,7 @@ setVideoQuestionIndex(0);
     // Continuous mode keeps listening even if candidate pauses.
     recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 3;
 
     let finalTranscript = "";
     let silenceTimer = null;
@@ -229,6 +249,7 @@ setVideoQuestionIndex(0);
     };
 
     recognition.onresult = (event) => {
+      console.log("Speech recognition results:", event.results);
       let interimTranscript = "";
 
       for (
@@ -292,6 +313,8 @@ setVideoQuestionIndex(0);
       }
 
       const finalAnswer = finalTranscript.trim();
+      console.log("Final transcript length:", finalAnswer.length);
+      console.log("Final transcript sent for evaluation:", finalAnswer);
 
       if (!finalAnswer) {
         return;
@@ -307,11 +330,19 @@ setVideoQuestionIndex(0);
         // AI ANSWER EVALUATION
         // -----------------------------
 
+        console.log("Video question ID:", videoQuestionId);
+        console.log("Video questions data:", videoQuestionsRef.current);
+        const currentQuestion = videoQuestionsRef.current.find(
+          (item) => String(item.question_id) === String(questionId)
+        );
+        console.log("Expected answer sent:", currentQuestion?.expected_answer);
         const response = await fetch(
           "http://127.0.0.1:8000/ai/analyze-video-answer?question=" +
-            encodeURIComponent(questionText) +
-            "&answer=" +
-            encodeURIComponent(finalAnswer),
+          encodeURIComponent(questionText) +
+          "&answer=" +
+          encodeURIComponent(finalAnswer) +
+          "&expected_answer=" +
+          encodeURIComponent(currentQuestion?.expected_answer || ""),
           {
             method: "POST",
           }
@@ -428,6 +459,7 @@ setVideoQuestionIndex(0);
           ...videoEvaluationsRef.current,
           newEvaluation,
         ];
+        console.log("Evaluations sent to scorecard:", updatedEvaluations);
 
         videoEvaluationsRef.current =
           updatedEvaluations;
@@ -499,6 +531,57 @@ if (
       await scorecardResponse.json();
 
     setFinalScorecard(scorecardData);
+    const candidateEmail = localStorage.getItem("userEmail");
+
+if (candidateEmail) {
+  const saveResponse = await fetch(
+    "http://127.0.0.1:8000/ai/save-video-scorecard?candidate_email=" +
+      encodeURIComponent(candidateEmail),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(scorecardData),
+    }
+  );
+
+  if (!saveResponse.ok) {
+    console.error(
+      "Failed to save video interview scorecard:",
+      await saveResponse.text()
+    );
+  }
+    if (saveResponse.ok) {
+    const token = localStorage.getItem("accessToken");
+
+    if (token) {
+      const syncResponse = await fetch(
+        "http://127.0.0.1:8000/candidates/sync-video-interview",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!syncResponse.ok) {
+        console.error(
+          "Failed to sync candidate to recruiter dashboard:",
+          await syncResponse.text()
+        );
+      } else {
+        console.log(
+          "Candidate synced to recruiter dashboard:",
+          await syncResponse.json()
+        );
+      }
+    } else {
+      console.error("Access token not found. Please log in again.");
+    }
+  }
+}
 
     setVideoInterviewCompleted(true);
     return;

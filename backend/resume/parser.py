@@ -52,16 +52,31 @@ def extract_phone(text):
     return None
 
 
+
 def extract_name(text):
-    lines = text.splitlines()
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
 
+    # First, handle resumes with an explicit "Name:" label.
     for line in lines:
-        line = line.strip()
-
         if line.lower().startswith("name:"):
             name = line.split(":", 1)[1].strip()
-
             if name:
+                return name
+
+    # Fallback for this resume template, where the name is split
+    # across two uppercase lines, such as AYESHA / QURESHI.
+    for i in range(len(lines) - 1):
+        first = lines[i]
+        second = lines[i + 1]
+
+        if (
+            re.fullmatch(r"[A-Z][A-Z'-]*", first)
+            and re.fullmatch(r"[A-Z][A-Z'-]*", second)
+            and len(first) > 1
+            and len(second) > 1
+        ):
+            name = f"{first.title()} {second.title()}"
+            if name.lower() not in {"computer skills", "contact me"}:
                 return name
 
     return None
