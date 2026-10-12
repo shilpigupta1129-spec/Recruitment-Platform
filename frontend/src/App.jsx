@@ -2532,55 +2532,6 @@ if (candidateEmail) {
 </div>
 )}
 </form>
-
-          <div
-            style={{
-              marginTop:
-                "24px",
-              padding: "14px",
-              borderRadius:
-                "10px",
-              background:
-                "#f8fafc",
-              border:
-                "1px solid #e2e8f0",
-            }}
-          >
-            <p
-              style={{
-                margin:
-                  "0 0 8px",
-                fontSize: "12px",
-                fontWeight: "700",
-                color: "#475569",
-              }}
-            >
-              Demo Recruiter
-              Credentials
-            </p>
-
-            <p
-              style={{
-                margin: "4px 0",
-                fontSize: "12px",
-                color: "#64748b",
-              }}
-            >
-              Email:
-              recruiter@recruitai.com
-            </p>
-
-            <p
-              style={{
-                margin: "4px 0",
-                fontSize: "12px",
-                color: "#64748b",
-              }}
-            >
-              Password:
-              RecruitAI@123
-            </p>
-          </div>
         </div>
       </div>
     );

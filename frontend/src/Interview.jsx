@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AIInterviewerAvatar from "./components/AIInterviewerAvatar";
 
 function Interview({ userRole, userId }) {
   // =========================
@@ -1639,58 +1640,26 @@ const deleteQuestion = async (questionId) => {
               }}
             >
               {/* AI AVATAR */}
+              
+              {/* AI AVATAR */}
               <div
                 style={{
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(135deg, #3b82f6, #7c3aed)",
+                  flex: 1,
+                  width: "100%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "58px",
-                  boxShadow:
-                    aiSpeaking
-                      ? "0 0 0 8px rgba(59,130,246,0.15), 0 0 35px rgba(59,130,246,0.5)"
-                      : "0 8px 25px rgba(0,0,0,0.3)",
-                  transition: "0.3s ease",
+                  padding: "24px 12px",
                 }}
               >
-                🤖
+                <AIInterviewerAvatar
+                  isSpeaking={aiSpeaking}
+                  imageSrc="/avatars/AI_female.png"
+                />
               </div>
 
-              <h3
-                style={{
-                  marginTop: "18px",
-                  marginBottom: "7px",
-                  fontSize: "20px",
-                }}
-              >
-                AI Interviewer
-              </h3>
-
-              <div
-                style={{
-                  padding: "7px 14px",
-                  borderRadius: "20px",
-                  background: aiSpeaking
-                    ? "rgba(59,130,246,0.15)"
-                    : "rgba(34,197,94,0.15)",
-                  color: aiSpeaking
-                    ? "#60a5fa"
-                    : "#4ade80",
-                  fontSize: "14px",
-                  border: aiSpeaking
-                    ? "1px solid rgba(96,165,250,0.2)"
-                    : "1px solid rgba(74,222,128,0.2)",
-                }}
-              >
-                {aiSpeaking
-                  ? "🔊 AI is speaking..."
-                  : "🎤 Listening for your answer"}
-              </div>
-
+           
+  
               {/* STATUS BADGE */}
               <div
                 style={{
