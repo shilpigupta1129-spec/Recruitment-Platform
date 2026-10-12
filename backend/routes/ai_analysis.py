@@ -77,12 +77,13 @@ Question:
 Candidate Answer:
 {answer.answer}
 
-Give:
-1. A score from 0 to 10
-2. Short, question-specific feedback
+Return your evaluation in exactly this format:
+Score: [one integer from 0 to 10]/10
+Feedback: [short, question-specific explanation]
 
-Be technically accurate and evaluate only the candidate's answer
-in relation to the given question.
+Evaluate the candidate's answer only in relation to the given
+question. Be technically accurate. Award scores based on correctness,
+relevance, and completeness. Do not always give a high score.
 """
 
     try:
@@ -94,9 +95,19 @@ in relation to the given question.
             input=prompt
         )
 
-        analysis = response.output_text
+        analysis = response.output_text.strip()
 
-        answer.score = 8
+        import re
+        score_match = re.search(
+            r"\b(?:score\s*[:\-]?\s*)(10|[0-9])\b",
+            analysis,
+            re.IGNORECASE
+        )
+
+        if not score_match:
+            raise ValueError("OpenAI response did not contain a valid score.")
+
+        answer.score = int(score_match.group(1))
         answer.feedback = analysis
 
         db.commit()
@@ -110,7 +121,9 @@ in relation to the given question.
             "source": "OpenAI AI"
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"OpenAI evaluation failed: {type(e).__name__}: {e}")
+        print("OpenAI response body:", getattr(getattr(e, "response", None), "text", None))
         question_text = question.question.lower()
         answer_text = answer_text.lower()
 
