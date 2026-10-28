@@ -3393,8 +3393,7 @@ if (userRole === "candidate") {
 
           <a
             href="#dashboard"
-            className="nav-item active"
-            onClick={() =>
+className={`nav-item ${currentView === "dashboard" ? "active" : ""}`}            onClick={() =>
               setCurrentView("dashboard")
             }
           >
@@ -3402,16 +3401,22 @@ if (userRole === "candidate") {
             Dashboard
           </a>
 
-          <a
-            href="#candidates"
-            className="nav-item"
-            onClick={() =>
-              setCurrentView("dashboard")
-            }
-          >
-            <span>   </span>
-            Candidates
-          </a>
+          <button
+  type="button"
+  className={`nav-item ${currentView === "candidates" ? "active" : ""}`}
+  onClick={() => setCurrentView("candidates")}
+  style={{
+    width: "100%",
+    border: "none",
+    textAlign: "left",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  }}
+>
+  <span></span>
+  Candidates
+</button>
+            
 
           <a
             href="#analysis"
@@ -3539,6 +3544,8 @@ if (userRole === "candidate") {
                 {error}
           </div>
         )}
+        {currentView !== "candidates" && (
+  <>
 
         {/* STATISTICS */}
 
@@ -3832,6 +3839,8 @@ if (userRole === "candidate") {
           </div>
 
         </section>
+          </>
+)}
 
         {/* CANDIDATE RANKING */}
 
@@ -4380,24 +4389,8 @@ if (userRole === "candidate") {
                     }
                   >
                          View Resume
-                  </button>
-                  jsx
-<button
-  className="view-resume-button"
-  disabled={!selectedCandidate.resume_filename}
-  onClick={() => {
-    if (!selectedCandidate.resume_filename) return;
-
-    window.open(
-      `http://127.0.0.1:8000/candidates/${selectedCandidate.id}/resume`,
-      "_blank"
-    );
-  }}
->
-  {selectedCandidate.resume_filename
-    ? "View Resume"
-    : "Resume Not Available"}
-</button>
+                         </button>
+                 
 
                   <button
                     className="delete-profile-button"

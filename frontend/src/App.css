@@ -3350,3 +3350,156 @@ html {
   transform: translateY(-1px);
   opacity: 0.92;
 }
+
+/* =========================================================
+   FINAL DASHBOARD POLISH
+   Added safely at the end of App.css
+========================================================= */
+
+body {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #172033;
+  background: #f4f7fc;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  background: #f4f7fc;
+}
+
+.sidebar {
+  background: #111a2e;
+  color: #e7edfa;
+}
+
+.brand h2 {
+  letter-spacing: -0.4px;
+  font-weight: 750;
+}
+
+.nav-item {
+  border-radius: 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, #3867e8, #6546d9);
+  box-shadow: 0 5px 14px rgba(56, 103, 232, 0.24);
+}
+
+.topbar {
+  gap: 16px;
+}
+
+.topbar h1 {
+  color: #172033;
+  letter-spacing: -0.8px;
+  font-weight: 750;
+}
+
+.topbar p {
+  line-height: 1.6;
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #e7ecf5;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 4px 18px rgba(23, 32, 51, 0.035);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 26px rgba(23, 32, 51, 0.075);
+}
+
+.stat-icon {
+  border-radius: 12px;
+}
+
+.stat-card h2 {
+  font-weight: 750;
+  letter-spacing: -0.7px;
+}
+
+.dashboard-card {
+  border: 1px solid #e7ecf5;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(23, 32, 51, 0.035);
+}
+
+.card-header {
+  border-bottom-color: #edf0f6;
+}
+
+.card-header h2 {
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.candidate-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.candidate-table th {
+  background: #f7f9fd;
+  color: #69758b;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.65px;
+  text-transform: uppercase;
+}
+
+.candidate-table td {
+  border-bottom: 1px solid #edf0f6;
+  vertical-align: middle;
+}
+
+.candidate-table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.candidate-table tbody tr:hover {
+  background: #f7f9ff;
+}
+
+button {
+  transition: background 0.18s ease, box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(59, 110, 235, 0.3);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  border-color: #dce3ef;
+  border-radius: 9px;
+}
+
+@media (max-width: 768px) {
+  .stat-card {
+    padding: 16px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
