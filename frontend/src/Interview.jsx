@@ -1764,7 +1764,7 @@ const deleteQuestion = async (questionId) => {
                 fontSize: "16px",
               }}
             >
-              🤖 AI Question
+              🤖 Question
             </h3>
 
             <p
